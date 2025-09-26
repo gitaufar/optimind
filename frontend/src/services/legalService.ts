@@ -2,6 +2,7 @@
 // File: src/services/legalService.ts
 
 import supabase from '../utils/supabase';
+import { withAuthCheck } from '../utils/authHelper';
 import type { Contract, ContractEntity, RiskFinding, LegalNote, LegalKPI } from '../types/db';
 
 export interface LegalDashboardData {
@@ -32,45 +33,48 @@ export class LegalService {
    * Get KPI data untuk legal dashboard
    */
   static async getLegalKPI(): Promise<LegalKPI> {
-    try {
-      // Hitung KPI dari data contracts yang ada
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
-      // Contracts this week
-      const { count: contractsThisWeek } = await supabase
-        .from('contracts')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', weekAgo.toISOString());
+    return await withAuthCheck(async () => {
+      try {
+        // Hitung KPI dari data contracts yang ada
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        // Contracts this week
+        const { count: contractsThisWeek } = await supabase
+          .from('contracts')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', weekAgo.toISOString());
 
-      // High risk contracts
-      const { count: highRiskCount } = await supabase
-        .from('contracts')
-        .select('*', { count: 'exact', head: true })
-        .eq('risk', 'high');
+        // High risk contracts
+        const { count: highRiskCount } = await supabase
+          .from('contracts')
+          .select('*', { count: 'exact', head: true })
+          .eq('risk', 'high');
 
-      // Pending AI analysis (contracts without entities)
-      const { data: contractsWithoutEntities } = await supabase
-        .from('contracts')
-        .select(`
-          id,
-          contract_entities!left(contract_id)
-        `)
-        .is('contract_entities.contract_id', null);
+        // Pending AI analysis (contracts without entities)
+        const { data: contractsWithoutEntities } = await supabase
+          .from('contracts')
+          .select(`
+            id,
+            contract_entities!left(contract_id)
+          `)
+          .is('contract_entities.contract_id', null);
 
-      return {
-        contracts_this_week: contractsThisWeek || 0,
-        high_risk: highRiskCount || 0,
-        pending_ai: contractsWithoutEntities?.length || 0
-      };
-    } catch (error) {
-      console.error('Error fetching legal KPI:', error);
-      return {
-        contracts_this_week: 0,
-        high_risk: 0,
-        pending_ai: 0
-      };
-    }
+        return {
+          contracts_this_week: contractsThisWeek || 0,
+          high_risk: highRiskCount || 0,
+          pending_ai: contractsWithoutEntities?.length || 0
+        };
+      } catch (error) {
+        console.error('Error fetching legal KPI:', error);
+        // Always return a LegalKPI object, never null
+        return {
+          contracts_this_week: 0,
+          high_risk: 0,
+          pending_ai: 0
+        };
+      }
+    }) as LegalKPI;
   }
 
   /**
