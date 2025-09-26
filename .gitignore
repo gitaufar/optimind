@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Data & Uploads
+data/uploads/
+data/*.csv
+!data/master_clauses_sample.csv   # keep contoh kecil
+
+# Models
+models/indo_bert/
+*.pt
+*.bin
+*.h5
+
+# Config & Secrets
+backend/config/
+.env
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
