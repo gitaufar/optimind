@@ -1,19 +1,44 @@
 "use client"
 import { useEffect, useState, useCallback } from 'react'
 import supabase from '@/utils/supabase'
+import LegalService from '@/services/legalService'
 import type { Contract, LegalKPI, ContractEntity, RiskFinding, LegalNote } from '@/types/db'
 
 export function useLegalKPI() {
   const [kpi, setKpi] = useState<LegalKPI | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('legal_kpi').select('*').single()
-      setKpi(data as LegalKPI)
-    })()
+  const fetchKPI = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const kpiData = await LegalService.getLegalKPI()
+      setKpi(kpiData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch KPI')
+      console.error('Error fetching legal KPI:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  return { kpi }
+  useEffect(() => {
+    fetchKPI()
+    
+    // Set up real-time subscription for KPI updates
+    const channel = LegalService.subscribeToLegalUpdates(
+      () => fetchKPI(), // Refresh KPI when contracts change
+      () => fetchKPI(), // Refresh KPI when risk findings change
+      () => fetchKPI()  // Refresh KPI when notes change
+    )
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchKPI])
+
+  return { kpi, loading, error, refresh: fetchKPI }
 }
 
 export function useContracts(filter?: { status?: string; risk?: string }) {
@@ -22,83 +47,109 @@ export function useContracts(filter?: { status?: string; risk?: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchAll = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    let query = supabase.from('contracts').select('*').order('created_at', { ascending: false })
-    if (filter?.status && filter.status !== 'All') {
-      query = query.eq('status', filter.status)
-    }
-    if (filter?.risk && filter.risk !== 'All') {
-      query = query.eq('risk', filter.risk)
-    }
+    try {
+      setLoading(true)
+      setError(null)
+      
+      let query = supabase.from('contracts').select('*').order('created_at', { ascending: false })
+      
+      if (filter?.status && filter.status !== 'All') {
+        query = query.eq('status', filter.status)
+      }
+      if (filter?.risk && filter.risk !== 'All') {
+        query = query.eq('risk', filter.risk)
+      }
 
-    const { data, error } = await query
-    if (error) {
-      setError(error.message)
-    } else {
-      setItems((data ?? []) as Contract[])
+      const { data, error: queryError } = await query
+      
+      if (queryError) {
+        setError(queryError.message)
+        console.error('Error fetching contracts:', queryError)
+      } else {
+        setItems((data ?? []) as Contract[])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch contracts')
+      console.error('Error fetching contracts:', err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [filter?.risk, filter?.status])
 
   useEffect(() => {
     fetchAll()
+    
+    // Set up real-time subscription
     const ch = supabase
       .channel('contracts-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, fetchAll)
       .subscribe()
+      
     return () => {
       supabase.removeChannel(ch)
     }
   }, [fetchAll])
 
   const updateStatus = useCallback(async (id: string, status: Contract['status']) => {
-    await supabase.from('contracts').update({ status }).eq('id', id)
+    try {
+      await LegalService.updateContractStatus(id, status)
+      // Real-time subscription akan handle update otomatis
+    } catch (err) {
+      console.error('Error updating contract status:', err)
+      throw err
+    }
   }, [])
 
   const setRisk = useCallback(async (id: string, risk: Contract['risk']) => {
-    await supabase.from('contracts').update({ risk }).eq('id', id)
+    try {
+      await LegalService.updateContractRisk(id, risk)
+      // Real-time subscription akan handle update otomatis
+    } catch (err) {
+      console.error('Error updating contract risk:', err)
+      throw err
+    }
   }, [])
 
-  return { items, loading, error, updateStatus, setRisk }
+  return { items, loading, error, updateStatus, setRisk, refresh: fetchAll }
 }
 
 export function useAnalyzer(contractId?: string) {
   const [entities, setEntities] = useState<ContractEntity | null>(null)
   const [findings, setFindings] = useState<RiskFinding[]>([])
   const [notes, setNotes] = useState<LegalNote[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!contractId) return
+    if (!contractId) {
+      setEntities(null)
+      setFindings([])
+      setNotes([])
+      return
+    }
 
-    const { data: ent } = await supabase
-      .from('contract_entities')
-      .select('*')
-      .eq('contract_id', contractId)
-      .order('analyzed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    setEntities(ent as ContractEntity | null)
-
-    const { data: rf } = await supabase
-      .from('risk_findings')
-      .select('*')
-      .eq('contract_id', contractId)
-      .order('created_at', { ascending: false })
-    setFindings((rf ?? []) as RiskFinding[])
-
-    const { data: ln } = await supabase
-      .from('legal_notes')
-      .select('*')
-      .eq('contract_id', contractId)
-      .order('created_at', { ascending: false })
-    setNotes((ln ?? []) as LegalNote[])
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const analysis = await LegalService.getContractAnalysis(contractId)
+      setEntities(analysis.entities)
+      setFindings(analysis.findings)
+      setNotes(analysis.notes)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch contract analysis')
+      console.error('Error fetching contract analysis:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [contractId])
 
   useEffect(() => {
     refresh()
+    
     if (!contractId) return
 
+    // Set up real-time subscriptions for this specific contract
     const ch = supabase
       .channel(`legal-${contractId}`)
       .on(
@@ -125,36 +176,29 @@ export function useAnalyzer(contractId?: string) {
 
   const runAnalysis = useCallback(
     async (id: string, seed?: Partial<ContractEntity>) => {
-      await supabase.from('contract_entities').insert([
-        {
-          contract_id: id,
-          first_party: seed?.first_party ?? 'PT Integrasi Logistik Cipta Solusi (ILCS)',
-          second_party: seed?.second_party ?? 'PT Supplier A',
-          value_rp: seed?.value_rp ?? 2_500_000_000,
-          duration_months: seed?.duration_months ?? 12,
-          penalty: seed?.penalty ?? 'Denda 0,5%/hari, maks 5%',
-          initial_risk: seed?.initial_risk ?? 'High',
-        },
-      ])
-
-      await supabase.from('risk_findings').insert([
-        { contract_id: id, section: 'Section 8.2', level: 'High', title: 'Termination for Convenience' },
-        { contract_id: id, section: 'Section 12.1', level: 'Medium', title: 'SLA tidak spesifik' },
-      ])
-
-      await supabase.from('contracts').update({ risk: 'High', status: 'Reviewed' }).eq('id', id)
-      await refresh()
+      try {
+        await LegalService.runContractAnalysis(id, seed)
+        // Real-time subscription akan handle refresh otomatis
+      } catch (err) {
+        console.error('Error running analysis:', err)
+        throw err
+      }
     },
-    [refresh],
+    []
   )
 
   const addNote = useCallback(
-    async (id: string, note: string) => {
-      await supabase.from('legal_notes').insert([{ contract_id: id, note }])
-      await refresh()
+    async (id: string, note: string, author?: string) => {
+      try {
+        await LegalService.addLegalNote(id, note, author)
+        // Real-time subscription akan handle refresh otomatis  
+      } catch (err) {
+        console.error('Error adding note:', err)
+        throw err
+      }
     },
-    [refresh],
+    []
   )
 
-  return { entities, findings, notes, runAnalysis, addNote }
+  return { entities, findings, notes, loading, error, runAnalysis, addNote, refresh }
 }

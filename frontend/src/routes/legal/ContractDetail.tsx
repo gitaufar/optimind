@@ -6,8 +6,8 @@ import supabase from '@/utils/supabase'
 
 import CardDetailContract from '@/components/Legal/CardDetailContract'
 import RiskAnalysisCard from '@/components/Legal/RiskAnalysis'
-import AiRecommendation from '@/components/Legal/AIRecommendation' // Pastikan nama impor sesuai nama file
 import LegalNotes from '@/components/Legal/LegalNotes'
+import InteractiveDocumentViewer from '@/components/Legal/AIRecommendation'
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>()
@@ -16,6 +16,7 @@ export default function ContractDetail() {
 
   const [meta, setMeta] = useState<any>(null)
   const [notes, setNotes] = useState<any[]>([])
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   // Ambil detail kontrak
@@ -29,17 +30,45 @@ export default function ContractDetail() {
     })()
   }, [id])
 
-  // Ambil catatan legal
+  // Ambil AI analysis results
   useEffect(() => {
     if (!id) return
     ;(async () => {
-      const { data, error } = await supabase.from('contract_notes').select('*').eq('contract_id', id).order('created_at', { ascending: false })
+      const { data, error } = await supabase
+        .from('ai_risk_analysis')
+        .select('analysis_result')
+        .eq('contract_id', id)
+        .single()
+      
+      if (!error && data?.analysis_result) {
+        try {
+          const parsedAnalysis = typeof data.analysis_result === 'string' 
+            ? JSON.parse(data.analysis_result) 
+            : data.analysis_result
+          setAiAnalysis(parsedAnalysis)
+        } catch (parseError) {
+          console.error('Error parsing AI analysis:', parseError)
+          setAiAnalysis(null)
+        }
+      }
+    })()
+  }, [id])
+
+  // Ambil catatan legal dari legal_notes
+  useEffect(() => {
+    if (!id) return
+    ;(async () => {
+      const { data, error } = await supabase.from('legal_notes').select('*').eq('contract_id', id).order('created_at', { ascending: false })
       if (!error) setNotes(data ?? [])
     })()
   }, [id])
 
   const addNote = async (contractId: string, note: string) => {
-    const { data, error } = await supabase.from('contract_notes').insert({ contract_id: contractId, note }).select('*').single()
+    const { data, error } = await supabase.from('legal_notes').insert({ 
+      contract_id: contractId, 
+      note,
+      author: 'legal@ilcs.co.id'
+    }).select('*').single()
     if (!error && data) setNotes((prev) => [data, ...prev])
   }
 
@@ -56,28 +85,75 @@ export default function ContractDetail() {
     status: meta?.status || 'On Review',
     duration: meta?.duration_months != null ? `${meta.duration_months} Bulan` : '-',
     startDate: meta?.start_date ? new Date(meta.start_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-',
-    penalty: penaltyFinding?.description?.split(': ')?.[1] ?? '-',
-    riskLevel: (findings.some((f: any) => f.level === 'High') ? 'High Risk' : findings.some((f: any) => f.level === 'Medium') ? 'Medium Risk' : 'Low Risk') as 'High Risk' | 'Medium Risk' | 'Low Risk',
+    penalty: penaltyFinding?.title?.split(': ')?.[1] ?? '-',
+    // Menggunakan risk_level dari AI analysis, fallback ke risk_findings
+    riskLevel: (aiAnalysis?.risk_level ? `${aiAnalysis.risk_level} Risk` : 
+               (findings.some((f: any) => f.level === 'High') ? 'High Risk' : 
+                findings.some((f: any) => f.level === 'Medium') ? 'Medium Risk' : 'Low Risk')) as 'High Risk' | 'Medium Risk' | 'Low Risk',
   }
 
-  const analysisData = (findings ?? []).map((f: any) => ({
-    title: f.section ?? f.title ?? 'Clause',
-    riskLevel: f.level ?? 'Low',
-    description: f.description ?? 'No description available.',
-    documentLink: `#${f.section ?? f.title ?? ''}`,
-  }))
+  // Helper function untuk mengubah snake_case menjadi Title Case
+  const formatRiskType = (type: string): string => {
+    return type
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+  }
 
-  // PERUBAHAN UTAMA: Data untuk AIRecommendation sekarang diambil dari properti 'recommendation_text'
-  const recommendationData = {
-    documentTitle: meta?.name ?? meta?.title ?? 'Rekomendasi Kontrak',
-    recommendations: (findings ?? [])
-      // Filter hanya temuan yang memiliki teks rekomendasi
-      .filter((f: any) => f.recommendation_text) 
-      .map((f: any, index: number) => ({
-        // Gunakan properti `recommendation_text` dari data `finding` Anda
-        title: `Recommendation ${index + 1}: ${f.section ?? f.title}`,
-        content: f.recommendation_text, 
-      })),
+  // Risk Analysis data dari ai_risk_analysis.analysis_result
+  const analysisData = aiAnalysis?.risk_factors?.map((factor: any) => ({
+    title: formatRiskType(factor.type), // Mengubah force_majeure menjadi Force Majeure
+    riskLevel: factor.severity || 'Low', // Menggunakan severity dari AI analysis
+    description: factor.description || 'No description available.',
+    documentLink: `#${factor.type}`, // Link berdasarkan type
+    // Tambahan data untuk display yang lebih kaya
+    keywordCount: factor.keyword_count || 0,
+    foundKeywords: factor.found_keywords || []
+  })) || []
+
+  // AI Recommendation data dari ai_risk_analysis.analysis_result
+  const aiRecommendationData = {
+    riskLevel: aiAnalysis?.risk_level || 'Unknown',
+    confidence: aiAnalysis?.confidence || 0,
+    riskFactors: aiAnalysis?.risk_factors || [],
+    riskAssessment: aiAnalysis?.risk_assessment || {},
+    modelUsed: aiAnalysis?.model_used || 'AI Model',
+    processingTime: aiAnalysis?.processing_time || 0,
+    analysisTimestamp: aiAnalysis?.analysis_timestamp || new Date().toISOString(),
+    recommendations: aiAnalysis?.risk_assessment?.recommendations || [],
+    // Format untuk komponen sections
+    sections: [
+      {
+        title: 'Risk Assessment',
+        content: aiAnalysis?.risk_assessment?.description || 'No risk assessment available',
+        highlight: (aiAnalysis?.risk_level?.toLowerCase() === 'high' ? 'high' : 
+                   aiAnalysis?.risk_level?.toLowerCase() === 'medium' ? 'medium' : 'low') as 'low' | 'medium' | 'high'
+      },
+      {
+        title: 'Confidence Level', 
+        content: `${Math.round((aiAnalysis?.confidence || 0) * 100)}% - ${aiAnalysis?.risk_assessment?.confidence_interpretation || 'No confidence data'}`,
+        highlight: 'low' as const
+      },
+      {
+        title: 'Model Information',
+        content: `Analysis by: ${aiAnalysis?.model_used || 'AI Model'} | Processing time: ${aiAnalysis?.processing_time?.toFixed(2) || 0}s`,
+        highlight: 'low' as const
+      },
+      ...aiAnalysis?.risk_factors?.map((factor: any) => ({
+        title: `${factor.type.replace(/_/g, ' ').toUpperCase()} Risk`,
+        content: `${factor.description} (Severity: ${factor.severity}) - Found ${factor.keyword_count} related keywords: ${factor.found_keywords?.join(', ') || 'N/A'}`,
+        highlight: (factor.severity?.toLowerCase() === 'high' ? 'high' : 
+                   factor.severity?.toLowerCase() === 'medium' ? 'medium' : 'low') as 'low' | 'medium' | 'high'
+      })) || []
+    ],
+    // Format untuk komponen suggestions 
+    suggestions: aiAnalysis?.risk_assessment?.recommendations?.map((rec: string, index: number) => ({
+      title: `Recommendation ${index + 1}`,
+      originalContent: `Based on ${aiAnalysis?.model_used || 'AI'} analysis, this contract requires attention in ${aiAnalysis?.risk_assessment?.risk_factor_count || 0} areas`,
+      suggestedContent: rec,
+      riskLevel: (aiAnalysis?.risk_level?.toLowerCase() === 'high' ? 'high' : 
+                 aiAnalysis?.risk_level?.toLowerCase() === 'medium' ? 'medium' : 'low') as 'low' | 'medium' | 'high'
+    })) || []
   }
 
   const formattedNotes = (notes ?? []).map((n: any) => ({
@@ -101,10 +177,11 @@ export default function ContractDetail() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <RiskAnalysisCard risks={analysisData} />
-        {/* Menggunakan data yang sudah disiapkan dan props yang benar */}
-        <AIRecommendation 
-          documentTitle={recommendationData.documentTitle} 
-          recommendations={recommendationData.recommendations} 
+        {/* AI Recommendation dari ai_risk_analysis.analysis_result */}
+        <InteractiveDocumentViewer
+          documentTitle={`AI Risk Analysis - ${aiRecommendationData.riskLevel} Risk (${Math.round((aiRecommendationData.confidence || 0) * 100)}% confidence)`}
+          sections={aiRecommendationData.sections}
+          suggestions={aiRecommendationData.suggestions}
         />
       </div>
 

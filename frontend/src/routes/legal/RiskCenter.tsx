@@ -3,41 +3,69 @@ import { useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import Card from '@/components/Card'
 import { useContracts } from '@/hooks/useContracts'
-import { AlertTriangle, AlertCircle, Info, Download } from 'lucide-react'
+import { AlertTriangle, AlertCircle, Info, Download, RefreshCw } from 'lucide-react'
 import CardDashboard from '@/components/Legal/CardDashboard'
 import ButtonBlue from '@/components/ButtonBlue'
 import ContractListLegal from '@/components/Legal/ContractListLegal'
 
 export default function LegalRiskCenter() {
-  const { items } = useContracts()
   const [fltRisk, setFltRisk] = useState<'Low' | 'Medium' | 'High' | 'All'>('All')
   const [fltStatus, setFltStatus] = useState<'Pending Review' | 'Reviewed' | 'Revision Requested' | 'All'>('All')
-  const [sortBy] = useState<'value'>('value')
 
-  const highCount = items.filter((i) => i.risk === 'High').length
-  const medCount = items.filter((i) => i.risk === 'Medium').length
-  const lowCount = items.filter((i) => i.risk === 'Low').length
+  // Use filters in the hook for better performance
+  const contractFilter = useMemo(() => ({
+    risk: fltRisk !== 'All' ? fltRisk.toLowerCase() : undefined,
+    status: fltStatus !== 'All' ? fltStatus : undefined
+  }), [fltRisk, fltStatus])
 
-  const filtered = useMemo(() => {
-    return items
-      .filter((i) => (fltRisk === 'All' ? true : i.risk === fltRisk))
-      .filter((i) => (fltStatus === 'All' ? true : i.status === fltStatus))
-      .sort((a, b) => Number(b.value_rp || 0) - Number(a.value_rp || 0))
-  }, [items, fltRisk, fltStatus, sortBy])
+  const { items, loading, error, refresh } = useContracts(contractFilter)
 
-   const contractsMapped = useMemo(
+  // Calculate risk distribution from filtered data
+  const riskDistribution = useMemo(() => {
+    const high = items.filter((i) => i.risk === 'High').length
+    const medium = items.filter((i) => i.risk === 'Medium').length  
+    const low = items.filter((i) => i.risk === 'Low').length
+    return { high, medium, low, total: items.length }
+  }, [items])
+
+  // Sort by value (highest first)
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => Number(b.value_rp || 0) - Number(a.value_rp || 0))
+  }, [items])
+
+  const contractsMapped = useMemo(
     () =>
-      (filtered ?? []).map((c: any) => ({
+      sortedItems.map((c: any) => ({
         id: String(c.id),
         name: c.name ?? c.title ?? 'Untitled',
-        party: [c.first_party, c.second_party].filter(Boolean).join(' - ') || '-',
-        risk: c.risk ?? c.risk_level ?? 'Low',
-        clause: c.clause ?? c.clause_text ?? c.issue ?? '-',
-        section: c.section ?? c.clause_number ?? '-',
+        party: [c.first_party, c.second_party].filter(Boolean).join(' → ') || c.party || c.counterparty || '-',
+        risk: c.risk ?? c.risk_level ?? 'low',
+        clause: c.clause ?? c.clause_text ?? c.issue ?? 'Various risk factors identified',
+        section: c.section ?? c.clause_number ?? 'Multiple sections',
         status: c.status ?? c.review_status ?? 'Pending Review',
+        value: c.value_rp ? `Rp ${Number(c.value_rp).toLocaleString('id-ID')}` : '-'
       })),
-    [filtered]
+    [sortedItems]
   )
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Risk Center</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={refresh}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-6">
@@ -65,52 +93,45 @@ export default function LegalRiskCenter() {
       <div className="grid gap-4 md:grid-cols-3">
         <CardDashboard
           title="High Risk Clauses"
-          value={highCount}
+          value={riskDistribution.high}
           right={<AlertTriangle className="h-5 w-5 text-red-600" />}
         />
         <CardDashboard
           title="Medium Risk Clauses"
-          value={medCount}
+          value={riskDistribution.medium}
           right={<AlertCircle className="h-5 w-5 text-amber-600" />}
         />
         <CardDashboard
           title="Low Risk Clauses"
-          value={lowCount}
+          value={riskDistribution.low}
           right={<Info className="h-5 w-5 text-blue-600" />}
         />
       </div>
 
       <Card>
-          <div className="flex flex-wrap items-center gap-3">
-            <Select
-              label="Risk Level:"
-              value={fltRisk}
-              onChange={(e) => setFltRisk(e.target.value as typeof fltRisk)}
-              options={['All', 'Low', 'Medium', 'High']}
-            />
-            <Select
-              label="Status:"
-              value={fltStatus}
-              onChange={(e) => setFltStatus(e.target.value as typeof fltStatus)}
-              options={['All', 'Pending Review', 'Reviewed', 'Revision Requested']}
-            />
-            <Select label="Sort:" value={sortBy} onChange={() => {}} options={['Sort by Contract Value']} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            label="Risk Level:"
+            value={fltRisk}
+            onChange={(e) => setFltRisk(e.target.value as typeof fltRisk)}
+            options={['All', 'Low', 'Medium', 'High']}
+          />
+          <Select
+            label="Status:"
+            value={fltStatus}
+            onChange={(e) => setFltStatus(e.target.value as typeof fltStatus)}
+            options={['All', 'Pending Review', 'Reviewed', 'Revision Requested']}
+          />
+          <div className="text-sm text-gray-600">
+            Showing {contractsMapped.length} of {riskDistribution.total} contracts
           </div>
+        </div>
       </Card>
 
       <ContractListLegal
         variant="riskCenter"
         contracts={contractsMapped}
       />
-    </div>
-  )
-}
-
-function Big({ n, trend }: { n: number; trend: string }) {
-  return (
-    <div>
-      <div className="text-3xl font-bold">{n}</div>
-      <div className="text-xs text-gray-500">vs last month {trend}</div>
     </div>
   )
 }
