@@ -6,11 +6,13 @@ import { useContractsList, useStatusFiltering } from '@/hooks/useProcurement'
 import type { ContractRow, Risk, Status } from '@/types/procurement'
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'All', label: 'All Statuses' },
-  { value: 'Pending Review', label: 'Pending Review' },
+  { value: 'All', label: 'All Status' },
+  { value: 'Draft', label: 'Draft' },
+  { value: 'Submitted', label: 'Submitted' },
+  { value: 'Reviewed', label: 'Reviewed' },
   { value: 'Approved', label: 'Approved' },
   { value: 'Revision Requested', label: 'Revision Requested' },
-  { value: 'Draft', label: 'Draft' },
+  { value: 'Rejected', label: 'Rejected' },
   { value: 'Active', label: 'Active' },
   { value: 'Expired', label: 'Expired' },
 ]
@@ -23,13 +25,14 @@ const RISK_OPTIONS: Array<{ value: string; label: string }> = [
 ]
 
 const STATUS_BADGE: Partial<Record<Status, string>> = {
-  'Pending Review': 'bg-amber-100 text-amber-700 border border-amber-200',
+  Draft: 'bg-slate-100 text-slate-600 border border-slate-200',
+  Submitted: 'bg-blue-100 text-blue-700 border border-blue-200',
+  Reviewed: 'bg-amber-100 text-amber-700 border border-amber-200',
   Approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   'Revision Requested': 'bg-rose-100 text-rose-700 border border-rose-200',
-  Draft: 'bg-slate-100 text-slate-600 border border-slate-200',
-  Active: 'bg-blue-100 text-blue-700 border border-blue-200',
+  Rejected: 'bg-red-100 text-red-700 border border-red-200',
+  Active: 'bg-green-100 text-green-700 border border-green-200',
   Expired: 'bg-slate-200 text-slate-600 border border-slate-300',
-  Rejected: 'bg-rose-100 text-rose-700 border border-rose-200',
 }
 
 const RISK_BADGE: Partial<Record<Risk, string>> = {
@@ -48,6 +51,17 @@ export default function StatusTracking() {
     total: rows.length,
     visible: filtered.length,
   }), [rows.length, filtered.length])
+
+  // Filter contracts based on status and active/expired logic
+  const displayRows = useMemo(() => {
+    if (status === 'Active') {
+      return filtered.filter(row => isContractActive(row))
+    }
+    if (status === 'Expired') {
+      return filtered.filter(row => !isContractActive(row))
+    }
+    return filtered
+  }, [filtered, status])
 
   return (
     <div className="space-y-6">
@@ -116,7 +130,7 @@ export default function StatusTracking() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <th className="px-6 py-3">Contract Name</th>
+                <th className="px-6 py-3">Contract</th>
                 <th className="px-6 py-3">Parties</th>
                 <th className="px-6 py-3">Contract Value</th>
                 <th className="px-6 py-3">Duration</th>
@@ -135,7 +149,7 @@ export default function StatusTracking() {
                 </tr>
               )}
 
-              {!loading && filtered.length === 0 && (
+              {!loading && displayRows.length === 0 && (
                 <tr>
                   <td className="px-6 py-10 text-center text-slate-500" colSpan={8}>
                     No contracts match the selected filters.
@@ -144,13 +158,13 @@ export default function StatusTracking() {
               )}
 
               {!loading &&
-                filtered.map((row) => <StatusRow key={row.id} row={row} />)}
+                displayRows.map((row) => <StatusRow key={row.id} row={row} />)}
             </tbody>
           </table>
         </div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-6 py-4 text-xs text-slate-500">
           <span>
-            Showing {Math.min(summary.visible, summary.total)} of {summary.total} contracts
+            Showing {Math.min(displayRows.length, summary.total)} of {summary.total} contracts
           </span>
           <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -162,6 +176,31 @@ export default function StatusTracking() {
   )
 }
 
+function isContractActive(row: ContractRow): boolean {
+  if (!row.start_date || !row.end_date) return false
+  
+  const now = new Date()
+  const startDate = new Date(row.start_date)
+  const endDate = new Date(row.end_date)
+  
+  // Normalize dates to just the date part (remove time)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const contractStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+  const contractEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
+  
+  // Debug logging
+  console.log(`Contract ${row.id}:`, {
+    start_date: row.start_date,
+    end_date: row.end_date,
+    today: today.toISOString().split('T')[0],
+    contractStart: contractStart.toISOString().split('T')[0],
+    contractEnd: contractEnd.toISOString().split('T')[0],
+    isActive: today >= contractStart && today <= contractEnd
+  })
+  
+  return today >= contractStart && today <= contractEnd
+}
+
 function StatusRow({ row }: { row: ContractRow }) {
   const statusClass = STATUS_BADGE[row.status] ?? 'bg-slate-100 text-slate-600 border border-slate-200'
   const riskClass = row.risk ? RISK_BADGE[row.risk] ?? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-slate-100 text-slate-400 border border-slate-200'
@@ -169,8 +208,15 @@ function StatusRow({ row }: { row: ContractRow }) {
   return (
     <tr className="align-top">
       <td className="px-6 py-4">
-        <div className="font-semibold text-slate-900">{row.name || 'Unnamed Contract'}</div>
-        <div className="text-xs text-slate-500">Contract #{row.id.slice(0, 8).toUpperCase()}</div>
+        <div className="flex items-center gap-2">
+          <div className={`h-3 w-3 rounded-full ${
+            isContractActive(row) ? 'bg-green-500' : 'bg-red-500'
+          }`} />
+          <div>
+            <div className="font-semibold text-slate-900">{row.name || 'Unnamed Contract'}</div>
+            <div className="text-xs text-slate-500">#{row.id.slice(0, 8).toUpperCase()}</div>
+          </div>
+        </div>
       </td>
       <td className="px-6 py-4">
         <div className="text-slate-800">{row.first_party || 'N/A'}</div>
@@ -195,7 +241,7 @@ function StatusRow({ row }: { row: ContractRow }) {
       <td className="px-6 py-4 text-slate-500">{formatRelativeTime(row.updated_at ?? row.created_at)}</td>
       <td className="px-6 py-4 text-right">
         <a
-          href={`/legal/contracts/${row.id}`}
+          href={`/procurement/status`}
           className="inline-flex items-center rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-[#357ABD] transition hover:bg-[#357ABD]/10"
         >
           View Details

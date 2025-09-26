@@ -115,23 +115,8 @@ export default function ProcurementLayout() {
         <header className="flex items-center gap-4 bg-white px-6 py-4 shadow-sm">
           <div className="hidden w-[76px] md:block" aria-hidden />
           <div className="flex flex-1 items-center justify-center">
-            <div className="flex w-full max-w-md items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-500">
-              <svg
-                className="h-4 w-4 text-slate-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <line x1="16.65" y1="16.65" x2="21" y2="21" />
-              </svg>
-              <input
-                placeholder="Search contracts..."
-                className="w-full border-none bg-transparent text-slate-700 focus:outline-none"
-              />
+            <div className="text-center">
+              <h1 className="text-lg font-semibold text-slate-800">Procurement</h1>
             </div>
           </div>
           <div className="relative flex items-center">

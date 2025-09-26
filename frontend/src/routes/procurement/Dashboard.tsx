@@ -6,18 +6,26 @@ import { useProcurementKPI, useContractsList } from '@/hooks/useProcurement'
 import type { ContractRow, Status } from '@/types/procurement'
 
 const STATUS_BADGE: Partial<Record<Status, string>> = {
-  Approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  'Pending Review': 'bg-amber-100 text-amber-700 border border-amber-200',
-  'Revision Requested': 'bg-rose-100 text-rose-700 border border-rose-200',
   Draft: 'bg-slate-100 text-slate-600 border border-slate-200',
-  Active: 'bg-blue-100 text-blue-700 border border-blue-200',
+  Submitted: 'bg-blue-100 text-blue-700 border border-blue-200',
+  Reviewed: 'bg-amber-100 text-amber-700 border border-amber-200',
+  Approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  'Revision Requested': 'bg-rose-100 text-rose-700 border border-rose-200',
+  Rejected: 'bg-red-100 text-red-700 border border-red-200',
+  Active: 'bg-green-100 text-green-700 border border-green-200',
+  Expired: 'bg-slate-200 text-slate-600 border border-slate-300',
 }
 
-const STATUS_FILTERS: Array<{ id: 'all' | 'approved' | 'review' | 'new'; label: string }> = [
+const STATUS_FILTERS: Array<{ id: 'all' | 'draft' | 'submitted' | 'reviewed' | 'approved' | 'revision_requested' | 'rejected' | 'active' | 'expired'; label: string }> = [
   { id: 'all', label: 'All Status' },
+  { id: 'draft', label: 'Draft' },
+  { id: 'submitted', label: 'Submitted' },
+  { id: 'reviewed', label: 'Reviewed' },
   { id: 'approved', label: 'Approved' },
-  { id: 'review', label: 'On Review' },
-  { id: 'new', label: 'New Contract' },
+  { id: 'revision_requested', label: 'Revision Requested' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'active', label: 'Active' },
+  { id: 'expired', label: 'Expired' },
 ]
 
 const numberFormatter = new Intl.NumberFormat('id-ID')
@@ -31,19 +39,41 @@ export default function ProcurementDashboard() {
   const navigate = useNavigate()
   const { kpi, deltaPct } = useProcurementKPI()
   const { rows } = useContractsList()
-  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'review' | 'new'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'submitted' | 'reviewed' | 'approved' | 'revision_requested' | 'rejected' | 'active' | 'expired'>('all')
 
   const filteredRows = useMemo(() => {
+    let filtered = rows
+    
     switch (statusFilter) {
+      case 'draft':
+        filtered = rows.filter((row) => row.status === 'Draft')
+        break
+      case 'submitted':
+        filtered = rows.filter((row) => row.status === 'Submitted')
+        break
+      case 'reviewed':
+        filtered = rows.filter((row) => row.status === 'Reviewed')
+        break
       case 'approved':
-        return rows.filter((row) => row.status === 'Approved')
-      case 'review':
-        return rows.filter((row) => row.status === 'Pending Review' || row.status === 'Revision Requested')
-      case 'new':
-        return rows.filter((row) => row.status === 'Draft')
+        filtered = rows.filter((row) => row.status === 'Approved')
+        break
+      case 'revision_requested':
+        filtered = rows.filter((row) => row.status === 'Revision Requested')
+        break
+      case 'rejected':
+        filtered = rows.filter((row) => row.status === 'Rejected')
+        break
+      case 'active':
+        filtered = rows.filter((row) => isContractActive(row))
+        break
+      case 'expired':
+        filtered = rows.filter((row) => !isContractActive(row))
+        break
       default:
-        return rows
+        filtered = rows
     }
+    
+    return filtered
   }, [rows, statusFilter])
 
   const latestRows = useMemo(() => filteredRows.slice(0, 4), [filteredRows])
@@ -124,7 +154,7 @@ export default function ProcurementDashboard() {
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-6 py-3">Contract ID</th>
+                <th className="px-6 py-3">Contract</th>
                 <th className="px-6 py-3">Vendor</th>
                 <th className="px-6 py-3">Value</th>
                 <th className="px-6 py-3">Date</th>
@@ -178,14 +208,36 @@ function MetricCard({
   )
 }
 
+function isContractActive(row: ContractRow): boolean {
+  if (!row.start_date || !row.end_date) return false
+  
+  const now = new Date()
+  const startDate = new Date(row.start_date)
+  const endDate = new Date(row.end_date)
+  
+  // Normalize dates to just the date part (remove time)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const contractStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+  const contractEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
+  
+  return today >= contractStart && today <= contractEnd
+}
+
 function Row({ row }: { row: ContractRow }) {
   const statusClass = STATUS_BADGE[row.status] ?? 'bg-slate-100 text-slate-600 border border-slate-200'
 
   return (
     <tr>
       <td className="px-6 py-4">
-        <div className="font-semibold text-slate-900">{row.id.slice(0, 12).toUpperCase()}</div>
-        <div className="text-xs text-slate-500">{row.name || 'Untitled contract'}</div>
+        <div className="flex items-center gap-2">
+          <div className={`h-3 w-3 rounded-full ${
+            isContractActive(row) ? 'bg-green-500' : 'bg-red-500'
+          }`} />
+          <div>
+            <div className="font-semibold text-slate-900">{row.name || 'Untitled Contract'}</div>
+            <div className="text-xs text-slate-500">#{row.id.slice(0, 8).toUpperCase()}</div>
+          </div>
+        </div>
       </td>
       <td className="px-6 py-4">
         <div className="text-slate-800">{row.first_party || 'N/A'}</div>
@@ -200,7 +252,7 @@ function Row({ row }: { row: ContractRow }) {
       </td>
       <td className="px-6 py-4 text-right">
         <a
-          href={`/legal/contracts/${row.id}`}
+          href={`/procurement/status`}
           className="inline-flex items-center rounded-full bg-[#357ABD]/10 px-3 py-1 text-xs font-semibold text-[#357ABD] transition hover:bg-[#357ABD]/20"
         >
           View Details

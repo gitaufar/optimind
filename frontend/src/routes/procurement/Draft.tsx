@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type {
   ChangeEvent,
   Dispatch,
@@ -130,10 +131,11 @@ function formatDate(value: string): string {
 
 export default function DraftContract() {
   const { create } = useCreateContract()
+  const navigate = useNavigate()
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>({
     name: '',
-    first_party: 'PT ILCS (Indonesia Logistics and Cargo Services)',
+    first_party: 'PT Integrasi Logistik Cipta Solusi (ILCS)',
     second_party: '',
     contract_type: '',
     first_address: '',
@@ -190,9 +192,10 @@ export default function DraftContract() {
       duration_months: form.duration_months,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
-      status: 'Pending Review',
+      status: 'Submitted',
     })
     alert('Draft telah dikirim ke Legal')
+    navigate('/procurement')
   }
 
   return (
@@ -368,18 +371,12 @@ function Step1({ form, setForm }: StepProps) {
             onChange={(event) => setForm((f) => ({ ...f, second_party: event.target.value }))}
           />
         </Field>
-        <Field label="Contract Type">
-          <select
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
-            value={form.contract_type}
-            onChange={(event) => setForm((f) => ({ ...f, contract_type: event.target.value }))}
-          >
-            <option value="">Select contract type</option>
-            <option value="Goods">Goods</option>
-            <option value="Services">Services</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Consulting">Consulting</option>
-          </select>
+        <Field label="Contract Name">
+          <Input
+            placeholder="Enter contract name"
+            value={form.name}
+            onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
+          />
         </Field>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="First Party Address">
