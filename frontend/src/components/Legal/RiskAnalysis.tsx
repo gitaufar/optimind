@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
-
 // Tipe data untuk setiap item risiko
 type RiskItem = {
   title: string;
   riskLevel: 'High' | 'Medium' | 'Low';
   description: string;
   documentLink: string;
+  keywordCount?: number; // Opsional: jumlah keywords ditemukan
+  foundKeywords?: string[]; // Opsional: keywords yang ditemukan
 };
 
 // Tipe data untuk properti komponen utama
@@ -42,6 +42,16 @@ function RiskAnalysisItem({ item }: { item: RiskItem }) {
         <RiskBadge level={item.riskLevel} />
       </div>
       <p className="mt-2 text-sm text-gray-600">{item.description}</p>
+      
+      {/* Tampilkan informasi keywords jika tersedia */}
+      {item.keywordCount && item.keywordCount > 0 && (
+        <div className="mt-2">
+          <span className="text-xs text-gray-500">
+            Found {item.keywordCount} keywords: {item.foundKeywords?.join(', ') || 'N/A'}
+          </span>
+        </div>
+      )}
+      
       <a href={item.documentLink} className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline">
         View in Document
       </a>
