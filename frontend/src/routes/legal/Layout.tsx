@@ -6,7 +6,6 @@ const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/legal', label: 'Dashboard', end: true },
   { to: '/legal/inbox', label: 'Contract Inbox' },
   { to: '/legal/risk-center', label: 'Risk Center' },
-  { to: '/legal/ai-analyzer', label: 'AI Analyzer' },
 ]
 
 function getInitials(name: string | null | undefined) {
