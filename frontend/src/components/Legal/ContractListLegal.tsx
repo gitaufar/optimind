@@ -45,9 +45,10 @@ function PaginationControls({ currentPage, totalPages, onPageChange }: Paginatio
 
 function StatusPill({ status }: { status?: string }) {
   const statusStyles: { [key: string]: string } = {
-    Pending: "bg-yellow-100 text-yellow-700",
-    Reviewed: "bg-green-100 text-green-700",
+    Submitted: "bg-gray-100 text-gray-600",
+    Reviewed: "bg-orange-100 text-orange-700",
     "Revision Requested": "bg-purple-100 text-purple-700",
+    Approved: "bg-green-100 text-green-700",
   }
   return (
     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[status || ''] || 'bg-gray-100 text-gray-700'}`}>

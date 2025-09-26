@@ -7,13 +7,13 @@ import type { ContractRow, Status } from '@/types/procurement'
 
 const STATUS_BADGE: Partial<Record<Status, string>> = {
   Draft: 'bg-blue-100 text-blue-700 border border-blue-200',
-  Submitted: 'bg-orange-100 text-orange-700 border border-orange-200',
+  Submitted: 'bg-gray-100 text-gray-600 border border-gray-300',
   Reviewed: 'bg-orange-100 text-orange-700 border border-orange-200',
   Approved: 'bg-green-100 text-green-700 border border-green-200',
-  'Revision Requested': 'bg-red-100 text-red-700 border border-red-200',
+  'Revision Requested': 'bg-yellow-100 text-yellow-700 border border-yellow-200',
   Rejected: 'bg-red-100 text-red-700 border border-red-200',
-  Active: 'bg-green-100 text-green-700 border border-green-200',
-  Expired: 'bg-slate-200 text-slate-600 border border-slate-300',
+  Active: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  Expired: 'bg-gray-100 text-gray-600 border border-gray-300',
 }
 
 const STATUS_FILTERS: Array<{ id: 'all' | 'draft' | 'submitted' | 'reviewed' | 'approved' | 'revision_requested' | 'rejected' | 'active' | 'expired'; label: string }> = [
@@ -98,9 +98,9 @@ export default function ProcurementDashboard() {
           iconClass="bg-blue-50 text-blue-600"
         />
         <MetricCard
-          title="Pending Legal Review"
+          title="Submitted Contracts"
           value={kpi?.pending_legal_review ?? 0}
-          helper="Awaiting action"
+          helper="Awaiting review"
           icon={
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -253,10 +253,10 @@ function Row({ row }: { row: ContractRow }) {
       </td>
       <td className="px-6 py-4 text-right">
         <a
-          href={`/procurement/status`}
-          className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-600"
+          href={`/procurement/contracts/${row.id}`}
+          className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-600 whitespace-nowrap"
         >
-          View Details
+          <span className="text-white">View Details</span>
         </a>
       </td>
     </tr>
@@ -292,49 +292,17 @@ function formatDate(value: string): string {
 }
 
 function getStatusIcon(status: Status): React.ReactNode {
-  switch (status) {
-    case 'Draft':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-        </svg>
-      )
-    case 'Submitted':
-    case 'Reviewed':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M12 6v6l4 2"/>
-        </svg>
-      )
-    case 'Approved':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 6L9 17l-5-5"/>
-        </svg>
-      )
-    case 'Revision Requested':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      )
-    default:
-      return null
-  }
+  return null
 }
 
 function formatStatus(status: Status): string {
   switch (status) {
     case 'Submitted':
-      return 'Pending Legal'
+      return 'Submitted'
     case 'Reviewed':
-      return 'Pending Legal'
+      return 'Reviewed'
     case 'Approved':
-      return 'Approved Manager'
+      return 'Approved'
     case 'Revision Requested':
       return 'Revision Requested'
     case 'Draft':

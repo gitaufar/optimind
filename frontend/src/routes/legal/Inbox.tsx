@@ -8,7 +8,7 @@ import ContractListLegal from '@/components/Legal/ContractListLegal'
 
 
 
-const STATUS = ['All', 'Pending Review', 'Reviewed', 'Approved'] as const
+const STATUS = ['All', 'Submitted', 'Reviewed', 'Approved'] as const
 const RISK = ['All', 'Low', 'Medium', 'High'] as const
 
 type StatusFilter = typeof STATUS[number]

@@ -11,7 +11,7 @@ import ContractListLegal from '@/components/Legal/ContractListLegal'
 export default function LegalRiskCenter() {
   const { items } = useContracts()
   const [fltRisk, setFltRisk] = useState<'Low' | 'Medium' | 'High' | 'All'>('All')
-  const [fltStatus, setFltStatus] = useState<'Pending Review' | 'Reviewed' | 'Revision Requested' | 'All'>('All')
+  const [fltStatus, setFltStatus] = useState<'Submitted' | 'Reviewed' | 'Revision Requested' | 'All'>('All')
   const [sortBy] = useState<'value'>('value')
 
   const highCount = items.filter((i) => i.risk === 'High').length
@@ -34,7 +34,7 @@ export default function LegalRiskCenter() {
         risk: c.risk ?? c.risk_level ?? 'Low',
         clause: c.clause ?? c.clause_text ?? c.issue ?? '-',
         section: c.section ?? c.clause_number ?? '-',
-        status: c.status ?? c.review_status ?? 'Pending Review',
+        status: c.status ?? c.review_status ?? 'Submitted',
       })),
     [filtered]
   )
@@ -92,7 +92,7 @@ export default function LegalRiskCenter() {
               label="Status:"
               value={fltStatus}
               onChange={(e) => setFltStatus(e.target.value as typeof fltStatus)}
-              options={['All', 'Pending Review', 'Reviewed', 'Revision Requested']}
+              options={['All', 'Submitted', 'Reviewed', 'Revision Requested']}
             />
             <Select label="Sort:" value={sortBy} onChange={() => {}} options={['Sort by Contract Value']} />
           </div>
