@@ -1,24 +1,37 @@
 "use client"
+
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Card from '@/components/Card'
 import { useProcurementKPI, useContractsList } from '@/hooks/useProcurement'
-import type { ContractRow } from '@/types/procurement'
+import type { ContractRow, Status } from '@/types/procurement'
 
-const STATUS_COLORS: Record<string, string> = {
-  Approved: 'bg-emerald-100 text-emerald-700',
-  'Pending Review': 'bg-amber-100 text-amber-700',
-  'Revision Requested': 'bg-rose-100 text-rose-700',
-  Draft: 'bg-slate-200 text-slate-700',
+const STATUS_BADGE: Partial<Record<Status, string>> = {
+  Approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+  'Pending Review': 'bg-amber-100 text-amber-700 border border-amber-200',
+  'Revision Requested': 'bg-rose-100 text-rose-700 border border-rose-200',
+  Draft: 'bg-slate-100 text-slate-600 border border-slate-200',
+  Active: 'bg-blue-100 text-blue-700 border border-blue-200',
 }
 
-type StatusFilterKey = 'all' | 'approved' | 'review' | 'new'
+const STATUS_FILTERS: Array<{ id: 'all' | 'approved' | 'review' | 'new'; label: string }> = [
+  { id: 'all', label: 'All Status' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'review', label: 'On Review' },
+  { id: 'new', label: 'New Contract' },
+]
+
+const numberFormatter = new Intl.NumberFormat('id-ID')
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+})
 
 export default function ProcurementDashboard() {
   const navigate = useNavigate()
   const { kpi, deltaPct } = useProcurementKPI()
   const { rows } = useContractsList()
-  const [statusFilter, setStatusFilter] = useState<StatusFilterKey>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'review' | 'new'>('all')
 
   const filteredRows = useMemo(() => {
     switch (statusFilter) {
@@ -33,141 +46,185 @@ export default function ProcurementDashboard() {
     }
   }, [rows, statusFilter])
 
-  const latestRows = useMemo(() => filteredRows.slice(0, 5), [filteredRows])
-
-  const formatDelta = (value: number) => {
-    if (!Number.isFinite(value)) return '+0% dari bulan lalu'
-    const sign = value >= 0 ? '+' : ''
-    return `${sign}${value}% dari bulan lalu`
-  }
+  const latestRows = useMemo(() => filteredRows.slice(0, 4), [filteredRows])
 
   return (
     <div className="space-y-6">
-      <div>
+      <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-slate-900">Procurement Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">Kelola kontrak dan pantau status persetujuan</p>
-      </div>
+        <p className="text-sm text-slate-500">Manage contracts and monitor approval status.</p>
+      </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <KPICard
-          title="Kontrak Baru Dibuat"
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          title="New Contracts"
           value={kpi?.new_this_month ?? 0}
           helper={formatDelta(deltaPct)}
-          icon="8"
+          icon="?"
+          iconClass="bg-blue-50 text-blue-500"
         />
-        <KPICard
-          title="Menunggu Review Legal"
+        <MetricCard
+          title="Pending Legal Review"
           value={kpi?.pending_legal_review ?? 0}
-          helper="Perlu tindakan"
-          icon="8"
-          helperClass="text-amber-600"
+          helper="Awaiting action"
+          icon="?"
+          iconClass="bg-amber-50 text-amber-500"
         />
-        <KPICard
-          title="Kontrak Disetujui"
+        <MetricCard
+          title="Approved Contracts"
           value={kpi?.approved_cnt ?? 0}
-          helper={`Approval rate ${(kpi?.approval_rate_pct ?? 0).toFixed(2)}%`}
-          icon="8"
+          helper={`$${formatApprovalRate(kpi?.approval_rate_pct ?? 0)} approval rate`}
+          icon="?"
+          iconClass="bg-emerald-50 text-emerald-500"
         />
-      </div>
+      </section>
 
-      <Card title="Status Tracking Kontrak" className="border-none bg-white shadow">
-        <div className="mb-3 flex items-center justify-between gap-3 text-sm">
-          <select
-            className="rounded-lg border border-slate-200 px-3 py-2 text-slate-600"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as StatusFilterKey)}
-          >
-            <option value="all">Semua Status</option>
-            <option value="approved">Approved</option>
-            <option value="review">On Review</option>
-            <option value="new">New Contract</option>
-          </select>
-          <button
-            className="inline-flex items-center rounded-xl bg-[#357ABD] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2C6AA2]"
-            onClick={() => navigate('/procurement/draft')}
-          >
-            + Kontrak Baru
-          </button>
-        </div>
-        <div className="overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-slate-500">
+      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <header className="flex flex-col gap-3 border-b border-slate-200 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Contract Status Tracking</h2>
+            <p className="text-sm text-slate-500">Latest updates from your ongoing procurement contracts.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+            >
+              {STATUS_FILTERS.map((filter) => (
+                <option key={filter.id} value={filter.id}>
+                  {filter.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="inline-flex items-center rounded-full bg-[#357ABD] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2e6dad]"
+              onClick={() => navigate('/procurement/draft')}
+            >
+              + Create Contract
+            </button>
+          </div>
+        </header>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="py-2">No. Kontrak</th>
-                <th>Vendor</th>
-                <th>Nilai</th>
-                <th>Tanggal</th>
-                <th>Status</th>
-                <th>Aksi</th>
+                <th className="px-6 py-3">Contract ID</th>
+                <th className="px-6 py-3">Vendor</th>
+                <th className="px-6 py-3">Value</th>
+                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody>
-              {latestRows.map((row) => (
-                <TableRow key={row.id} row={row} />
-              ))}
+            <tbody className="divide-y divide-slate-100 text-slate-700">
               {latestRows.length === 0 && (
                 <tr>
-                  <td className="py-6 text-center text-slate-500" colSpan={6}>
-                    Belum ada data kontrak untuk filter ini.
+                  <td className="px-6 py-8 text-center text-slate-500" colSpan={6}>
+                    No contracts found for this filter.
                   </td>
                 </tr>
               )}
+              {latestRows.map((row) => (
+                <Row key={row.id} row={row} />
+              ))}
             </tbody>
           </table>
         </div>
-      </Card>
+      </section>
     </div>
   )
 }
 
-function KPICard({
+function MetricCard({
   title,
   value,
   helper,
   icon,
-  helperClass = 'text-emerald-600',
+  iconClass,
 }: {
   title: string
   value: number
   helper: string
   icon: string
-  helperClass?: string
+  iconClass: string
 }) {
   return (
-    <Card className="border-none bg-white shadow">
+    <div className="rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
-          <p className={`mt-1 text-xs ${helperClass}`}>{helper}</p>
+          <p className="text-sm font-semibold text-slate-500">{title}</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
+          <p className="mt-1 text-xs text-emerald-600">{helper}</p>
         </div>
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-[#357ABD]/15 text-[#357ABD] text-lg">{icon}</div>
+        <span className={`grid h-10 w-10 place-items-center rounded-xl text-lg ${iconClass}`}>{icon}</span>
       </div>
-    </Card>
+    </div>
   )
 }
 
-function TableRow({ row }: { row: ContractRow }) {
+function Row({ row }: { row: ContractRow }) {
+  const statusClass = STATUS_BADGE[row.status] ?? 'bg-slate-100 text-slate-600 border border-slate-200'
+
   return (
-    <tr className="border-t">
-      <td className="py-2 font-medium text-slate-700">{row.id.slice(0, 8).toUpperCase()}</td>
-      <td className="text-slate-600">{row.second_party ?? '-'}</td>
-      <td className="text-slate-600">Rp {Number(row.value_rp ?? 0).toLocaleString('id-ID')}</td>
-      <td className="text-slate-600">{new Date(row.created_at).toLocaleDateString('id-ID')}</td>
-      <td>
-        <span
-          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-            STATUS_COLORS[row.status] ?? 'bg-slate-200 text-slate-600'
-          }`}
-        >
-          {row.status}
+    <tr>
+      <td className="px-6 py-4">
+        <div className="font-semibold text-slate-900">{row.id.slice(0, 12).toUpperCase()}</div>
+        <div className="text-xs text-slate-500">{row.name || 'Untitled contract'}</div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="text-slate-800">{row.first_party ?? '—'}</div>
+        <div className="text-xs text-slate-500">{row.second_party ?? '—'}</div>
+      </td>
+      <td className="px-6 py-4 font-semibold text-slate-800">{formatValue(row.value_rp)}</td>
+      <td className="px-6 py-4 text-slate-600">{formatDate(row.created_at)}</td>
+      <td className="px-6 py-4">
+        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
+          {formatStatus(row.status)}
         </span>
       </td>
-      <td>
-        <a href={`/legal/contracts/${row.id}`} className="text-[#357ABD] hover:underline">
-          Lihat
+      <td className="px-6 py-4 text-right">
+        <a
+          href={`/legal/contracts/${row.id}`}
+          className="inline-flex items-center rounded-full bg-[#357ABD]/10 px-3 py-1 text-xs font-semibold text-[#357ABD] transition hover:bg-[#357ABD]/20"
+        >
+          View Details
         </a>
       </td>
     </tr>
   )
+}
+
+function formatDelta(value: number): string {
+  if (!Number.isFinite(value)) return '+0% from last month'
+  const sign = value >= 0 ? '+' : ''
+  return `${sign}${value}% from last month`
+}
+
+function formatApprovalRate(rate: number): string {
+  return rate.toFixed(0) + '%'
+}
+
+function formatValue(value: number | null): string {
+  if (!value) return 'Rp 0'
+  if (value >= 1_000_000_000) {
+    return `Rp ${(value / 1_000_000_000).toFixed(1)}B`
+  }
+  if (value >= 1_000_000) {
+    return `Rp ${(value / 1_000_000).toFixed(1)}M`
+  }
+  return `Rp ${numberFormatter.format(value)}`
+}
+
+function formatDate(value: string): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return dateFormatter.format(date)
+}
+
+function formatStatus(status: Status): string {
+  return status.replace(/_/g, ' ')
 }

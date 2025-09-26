@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
@@ -17,7 +17,6 @@ import ProcurementDashboard from './routes/procurement/Dashboard'
 import DraftContract from './routes/procurement/Draft'
 import UploadContract from './routes/procurement/Upload'
 import StatusTracking from './routes/procurement/Status'
-import ProcurementSettings from './routes/procurement/Settings'
 
 // Legal
 import LegalLayout from './routes/legal/Layout'
@@ -25,7 +24,6 @@ import LegalDashboard from './routes/legal/Dashboard'
 import LegalInbox from './routes/legal/Inbox'
 import LegalRiskCenter from './routes/legal/RiskCenter'
 import LegalAnalyzer from './routes/legal/Analyzer'
-import LegalSettings from './routes/legal/Settings'
 import ContractDetail from './routes/legal/ContractDetail'
 
 // Management
@@ -49,7 +47,6 @@ const router = createBrowserRouter([
       { path: 'draft', element: <DraftContract /> },
       { path: 'upload', element: <UploadContract /> },
       { path: 'status', element: <StatusTracking /> },
-      { path: 'settings', element: <ProcurementSettings /> },
     ],
   },
   {
@@ -64,7 +61,6 @@ const router = createBrowserRouter([
       { path: 'inbox', element: <LegalInbox /> },
       { path: 'risk-center', element: <LegalRiskCenter /> },
       { path: 'ai-analyzer', element: <LegalAnalyzer /> },
-      { path: 'settings', element: <LegalSettings /> },
       { path: 'contracts/:id', element: <ContractDetail /> },
     ],
   },

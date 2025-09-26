@@ -1,6 +1,13 @@
 "use client"
+
 import { useMemo, useState } from 'react'
-import type { Dispatch, SetStateAction, InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type {
+  ChangeEvent,
+  Dispatch,
+  InputHTMLAttributes,
+  SetStateAction,
+  TextareaHTMLAttributes,
+} from 'react'
 import { useCreateContract } from '@/hooks/useProcurement'
 
 type Step = 1 | 2 | 3 | 4
@@ -16,10 +23,19 @@ type FormState = {
   second_contact: string
   summary: string
   value_rp: number
+  currency: string
   duration_months: number
+  duration_unit: string
+  renewal: string
+  payment_method: string
+  payment_terms: string
   start_date: string
   end_date: string
-  key_clauses: string
+  payment_terms_detail: string
+  delivery_acceptance: string
+  penalty_provisions: string
+  force_majeure: string
+  other_terms: string
 }
 
 const STEP_CONFIG: Array<{ id: Step; title: string }> = [
@@ -28,6 +44,89 @@ const STEP_CONFIG: Array<{ id: Step; title: string }> = [
   { id: 3, title: 'Key Clauses' },
   { id: 4, title: 'Review' },
 ]
+
+const currencyFormatter = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  maximumFractionDigits: 0,
+})
+
+const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+})
+
+const BELOW_TWENTY = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
+]
+
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+const THOUSANDS = ['', 'thousand', 'million', 'billion', 'trillion']
+
+function numberChunkToWords(num: number): string {
+  if (num === 0) return ''
+  if (num < 20) return BELOW_TWENTY[num]
+  if (num < 100) {
+    return `${TENS[Math.floor(num / 10)]}${num % 10 ? ' ' + numberChunkToWords(num % 10) : ''}`
+  }
+  return `${BELOW_TWENTY[Math.floor(num / 100)]} hundred${num % 100 ? ' ' + numberChunkToWords(num % 100) : ''}`
+}
+
+function numberToWords(num: number): string {
+  if (num === 0) return 'Zero'
+  const segments: string[] = []
+  let remaining = num
+  let chunkIndex = 0
+  while (remaining > 0) {
+    const chunk = remaining % 1000
+    if (chunk) {
+      const words = numberChunkToWords(chunk)
+      const suffix = THOUSANDS[chunkIndex]
+      segments.unshift(`${words}${suffix ? ' ' + suffix : ''}`)
+    }
+    remaining = Math.floor(remaining / 1000)
+    chunkIndex += 1
+  }
+  const sentence = segments.join(' ')
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
+function formatCurrency(value: number): string {
+  if (!value) return '-'
+  return currencyFormatter.format(value)
+}
+
+function formatCurrencyInWords(value: number): string {
+  if (!value) return ''
+  return `${numberToWords(Math.floor(value))} Rupiah`
+}
+
+function formatDate(value: string): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return dateFormatter.format(date)
+}
 
 export default function DraftContract() {
   const { create } = useCreateContract()
@@ -43,10 +142,19 @@ export default function DraftContract() {
     second_contact: '',
     summary: '',
     value_rp: 0,
+    currency: 'Indonesian Rupiah (IDR)',
     duration_months: 12,
+    duration_unit: 'Months',
+    renewal: 'Yes',
+    payment_method: 'Bank Transfer',
+    payment_terms: 'Net 30 Days',
     start_date: '',
     end_date: '',
-    key_clauses: '',
+    payment_terms_detail: '',
+    delivery_acceptance: '',
+    penalty_provisions: '',
+    force_majeure: '',
+    other_terms: '',
   })
 
   const currentStep = useMemo(() => STEP_CONFIG.find((cfg) => cfg.id === step)!, [step])
@@ -73,7 +181,7 @@ export default function DraftContract() {
     alert('Draft disimpan sebagai Draft')
   }
 
-  async function submitToLegal() {
+  async function generateDraft() {
     await create({
       name: form.name,
       first_party: form.first_party,
@@ -111,7 +219,7 @@ export default function DraftContract() {
             <button
               type="button"
               onClick={saveDraft}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
             >
               <span className="font-semibold">?</span>
               Save Draft
@@ -123,7 +231,7 @@ export default function DraftContract() {
               <button
                 type="button"
                 onClick={prev}
-                className="rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-300 px-4 py-2 font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
               >
                 Previous
               </button>
@@ -132,7 +240,7 @@ export default function DraftContract() {
               <button
                 type="button"
                 onClick={next}
-                className="rounded-xl bg-[#357ABD] px-5 py-2 font-medium text-white transition hover:bg-[#2e6dad]"
+                className="rounded-xl bg-[#357ABD] px-5 py-2 font-medium text-white shadow-sm transition hover:bg-[#2e6dad]"
               >
                 Next
               </button>
@@ -140,10 +248,10 @@ export default function DraftContract() {
             {step === 4 && (
               <button
                 type="button"
-                onClick={submitToLegal}
-                className="rounded-xl bg-[#357ABD] px-5 py-2 font-medium text-white transition hover:bg-[#2e6dad]"
+                onClick={generateDraft}
+                className="rounded-xl bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition hover:bg-emerald-700"
               >
-                Submit to Legal
+                Generate Draft
               </button>
             )}
           </div>
@@ -175,10 +283,7 @@ function StepHeader({ step }: { step: Step }) {
                 </div>
               </div>
               {idx < STEP_CONFIG.length - 1 && (
-                <div
-                  className={`h-px flex-1 ${item.id < step ? 'bg-[#357ABD]' : 'bg-slate-200'}`}
-                  aria-hidden
-                />
+                <div className={`h-px flex-1 ${item.id < step ? 'bg-[#357ABD]' : 'bg-slate-200'}`} aria-hidden />
               )}
             </div>
           )
@@ -192,7 +297,7 @@ function Field({ label, children, hint, className }: { label: string; children: 
   return (
     <label className={`space-y-2 text-sm ${className ?? ''}`}>
       <span className="block font-medium text-slate-600">{label}</span>
-      {hint && <span className="block text-xs text-slate-400">{hint}</span>}
+      {hint && <span className="block whitespace-pre-line text-xs text-slate-400">{hint}</span>}
       {children}
     </label>
   )
@@ -203,7 +308,7 @@ function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...rest}
-      className={`w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20 ${
+      className={`w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20 ${
         className ?? ''
       }`}
     />
@@ -215,7 +320,7 @@ function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...rest}
-      className={`w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20 ${
+      className={`w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20 ${
         className ?? ''
       }`}
     />
@@ -239,22 +344,22 @@ function Step1({ form, setForm }: StepProps) {
           <Input
             placeholder="PT ILCS (Indonesia Logistics and Cargo Services)"
             value={form.first_party}
-            onChange={(e) => setForm((f) => ({ ...f, first_party: e.target.value }))}
+            onChange={(event) => setForm((f) => ({ ...f, first_party: event.target.value }))}
           />
         </Field>
         <Field label="Name of the Second Party">
           <Input
             placeholder="Enter the name of the Second Party"
             value={form.second_party}
-            onChange={(e) => setForm((f) => ({ ...f, second_party: e.target.value }))}
+            onChange={(event) => setForm((f) => ({ ...f, second_party: event.target.value }))}
           />
         </Field>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Contract Type">
             <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
               value={form.contract_type}
-              onChange={(e) => setForm((f) => ({ ...f, contract_type: e.target.value }))}
+              onChange={(event) => setForm((f) => ({ ...f, contract_type: event.target.value }))}
             >
               <option value="">Select contract type</option>
               <option value="Goods">Goods</option>
@@ -267,7 +372,7 @@ function Step1({ form, setForm }: StepProps) {
             <Input
               placeholder="Enter contract name"
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
             />
           </Field>
         </div>
@@ -277,7 +382,7 @@ function Step1({ form, setForm }: StepProps) {
               rows={3}
               placeholder="Enter full address"
               value={form.first_address}
-              onChange={(e) => setForm((f) => ({ ...f, first_address: e.target.value }))}
+              onChange={(event) => setForm((f) => ({ ...f, first_address: event.target.value }))}
             />
           </Field>
           <Field label="Second Party Address">
@@ -285,7 +390,7 @@ function Step1({ form, setForm }: StepProps) {
               rows={3}
               placeholder="Enter full address"
               value={form.second_address}
-              onChange={(e) => setForm((f) => ({ ...f, second_address: e.target.value }))}
+              onChange={(event) => setForm((f) => ({ ...f, second_address: event.target.value }))}
             />
           </Field>
         </div>
@@ -294,14 +399,14 @@ function Step1({ form, setForm }: StepProps) {
             <Input
               placeholder="Name and position"
               value={form.first_contact}
-              onChange={(e) => setForm((f) => ({ ...f, first_contact: e.target.value }))}
+              onChange={(event) => setForm((f) => ({ ...f, first_contact: event.target.value }))}
             />
           </Field>
           <Field label="Second Party Contact Person" hint="Name and position">
             <Input
               placeholder="Name and position"
               value={form.second_contact}
-              onChange={(e) => setForm((f) => ({ ...f, second_contact: e.target.value }))}
+              onChange={(event) => setForm((f) => ({ ...f, second_contact: event.target.value }))}
             />
           </Field>
         </div>
@@ -310,53 +415,147 @@ function Step1({ form, setForm }: StepProps) {
   )
 }
 
+const CURRENCY_OPTIONS = ['Indonesian Rupiah (IDR)', 'US Dollar (USD)', 'Euro (EUR)']
+const DURATION_UNITS = ['Months', 'Years']
+const RENEWAL_OPTIONS = ['Yes', 'No']
+const PAYMENT_METHOD_OPTIONS = ['Bank Transfer', 'Cash', 'Credit Card', 'E-Invoice']
+const PAYMENT_TERMS_OPTIONS = ['Net 30 Days', 'Net 45 Days', 'Net 60 Days', 'Milestone Based']
+
 function Step2({ form, setForm }: StepProps) {
+  const handleValueChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const numericValue = event.target.value.replace(/[^0-9]/g, '')
+    setForm((f) => ({ ...f, value_rp: Number(numericValue) }))
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-slate-900">Step 2: Contract Details</h2>
-        <p className="text-sm text-slate-500">Capture the commercial terms and contract period.</p>
+        <p className="text-sm text-slate-500">Please provide the contract financial and timeline information.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Contract Value (Rp)">
-          <Input
-            type="number"
-            placeholder="2500000000"
-            value={form.value_rp}
-            onChange={(e) => setForm((f) => ({ ...f, value_rp: Number(e.target.value) }))}
-          />
-        </Field>
-        <Field label="Duration (months)">
-          <Input
-            type="number"
-            placeholder="12"
-            value={form.duration_months}
-            onChange={(e) => setForm((f) => ({ ...f, duration_months: Number(e.target.value) }))}
-          />
-        </Field>
-        <Field label="Start Date">
-          <Input
-            type="date"
-            value={form.start_date}
-            onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
-          />
-        </Field>
-        <Field label="End Date">
-          <Input
-            type="date"
-            value={form.end_date}
-            onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
-          />
-        </Field>
-        <Field label="Contract Summary" hint="Short description of scope and objectives" className="md:col-span-2">
-          <Textarea
-            rows={4}
-            placeholder="Describe the main scope, deliverables, and objectives"
-            value={form.summary}
-            onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-          />
-        </Field>
-      </div>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Contract Value</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Contract Value (IDR) *">
+            <div className="flex items-center rounded-xl border border-slate-300 bg-white shadow-sm transition focus-within:border-[#357ABD] focus-within:ring-2 focus-within:ring-[#357ABD]/20">
+              <span className="border-r border-slate-200 px-3 py-2 text-sm font-medium text-slate-500">IDR</span>
+              <input
+                className="flex-1 border-0 bg-transparent px-3 py-2 text-sm text-slate-700 outline-none"
+                placeholder="1,500,000,000"
+                inputMode="numeric"
+                value={form.value_rp ? form.value_rp.toLocaleString('id-ID') : ''}
+                onChange={handleValueChange}
+              />
+            </div>
+          </Field>
+          <Field label="Currency">
+            <select
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              value={form.currency}
+              onChange={(event) => setForm((f) => ({ ...f, currency: event.target.value }))}
+            >
+              {CURRENCY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Contract Duration</h3>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Duration *">
+            <Input
+              type="number"
+              placeholder="12"
+              value={form.duration_months}
+              onChange={(event) => setForm((f) => ({ ...f, duration_months: Number(event.target.value) }))}
+            />
+          </Field>
+          <Field label="Unit">
+            <select
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              value={form.duration_unit}
+              onChange={(event) => setForm((f) => ({ ...f, duration_unit: event.target.value }))}
+            >
+              {DURATION_UNITS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Renewable">
+            <select
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              value={form.renewal}
+              onChange={(event) => setForm((f) => ({ ...f, renewal: event.target.value }))}
+            >
+              {RENEWAL_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Contract Timeline</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Start Date *">
+            <Input
+              type="date"
+              value={form.start_date}
+              onChange={(event) => setForm((f) => ({ ...f, start_date: event.target.value }))}
+            />
+          </Field>
+          <Field label="End Date *">
+            <Input
+              type="date"
+              value={form.end_date}
+              onChange={(event) => setForm((f) => ({ ...f, end_date: event.target.value }))}
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Payment Terms</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Payment Method *">
+            <select
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              value={form.payment_method}
+              onChange={(event) => setForm((f) => ({ ...f, payment_method: event.target.value }))}
+            >
+              {PAYMENT_METHOD_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Payment Terms *">
+            <select
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#357ABD] focus:ring-2 focus:ring-[#357ABD]/20"
+              value={form.payment_terms}
+              onChange={(event) => setForm((f) => ({ ...f, payment_terms: event.target.value }))}
+            >
+              {PAYMENT_TERMS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </section>
     </div>
   )
 }
@@ -366,52 +565,153 @@ function Step3({ form, setForm }: StepProps) {
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-slate-900">Step 3: Key Clauses</h2>
-        <p className="text-sm text-slate-500">Highlight clauses that Legal should pay attention to.</p>
+        <p className="text-sm text-slate-500">Define key clauses and terms for your contract.</p>
       </div>
-      <Field label="Key Clauses" hint="Termination, penalty, SLA, exclusivity, and other special terms">
-        <Textarea
-          rows={6}
-          placeholder="List important clauses or paste key excerpts here"
-          value={form.key_clauses}
-          onChange={(e) => setForm((f) => ({ ...f, key_clauses: e.target.value }))}
-        />
-      </Field>
+      <div className="space-y-4">
+        <Field
+          label="Payment Terms"
+          hint={`Example: Payment shall be made in three instalments:\n• 30% upon contract signing\n• 40% upon delivery of goods\n• 30% upon final acceptance`}
+        >
+          <Textarea
+            rows={4}
+            placeholder="Describe payment breakdown, milestones, due dates..."
+            value={form.payment_terms_detail}
+            onChange={(event) => setForm((f) => ({ ...f, payment_terms_detail: event.target.value }))}
+          />
+        </Field>
+        <Field
+          label="Delivery & Acceptance"
+          hint="Example: The Second Party is required to deliver goods in accordance with the specified requirements within a maximum of 30 working days."
+        >
+          <Textarea
+            rows={3}
+            placeholder="Outline delivery schedule, acceptance criteria, SLAs..."
+            value={form.delivery_acceptance}
+            onChange={(event) => setForm((f) => ({ ...f, delivery_acceptance: event.target.value }))}
+          />
+        </Field>
+        <Field
+          label="Penalty Provisions"
+          hint="Example: In case of delivery delays, a penalty of 0.1% per day of the contract value shall be imposed."
+        >
+          <Textarea
+            rows={3}
+            placeholder="Detail penalty clauses, liquidated damages or escalation steps..."
+            value={form.penalty_provisions}
+            onChange={(event) => setForm((f) => ({ ...f, penalty_provisions: event.target.value }))}
+          />
+        </Field>
+        <Field
+          label="Force Majeure"
+          hint="Example: Both parties shall be released from their obligations in the event of force majeure circumstances."
+        >
+          <Textarea
+            rows={3}
+            placeholder="State the events considered force majeure and notification obligations..."
+            value={form.force_majeure}
+            onChange={(event) => setForm((f) => ({ ...f, force_majeure: event.target.value }))}
+          />
+        </Field>
+        <Field
+          label="Other Terms"
+          hint="Example: Any amendments or additions to this contract must be made in writing and agreed upon by both parties."
+        >
+          <Textarea
+            rows={3}
+            placeholder="Add other special conditions, exclusivity, confidentiality, etc..."
+            value={form.other_terms}
+            onChange={(event) => setForm((f) => ({ ...f, other_terms: event.target.value }))}
+          />
+        </Field>
+      </div>
     </div>
   )
 }
 
 function Step4({ form }: { form: FormState }) {
+  const formattedValue = formatCurrency(form.value_rp)
+  const valueInWords = formatCurrencyInWords(form.value_rp)
+
+  const keyClauseItems: Array<{ title: string; value: string }> = [
+    { title: 'Payment Terms', value: form.payment_terms_detail },
+    { title: 'Delivery & Acceptance', value: form.delivery_acceptance },
+    { title: 'Penalty Provisions', value: form.penalty_provisions },
+    { title: 'Force Majeure', value: form.force_majeure },
+    { title: 'Other Terms', value: form.other_terms },
+  ]
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-slate-900">Step 4: Review</h2>
-        <p className="text-sm text-slate-500">Make sure everything looks correct before submitting to Legal.</p>
+        <p className="text-sm text-slate-500">Review and confirm.</p>
       </div>
-      <dl className="grid gap-4 md:grid-cols-2">
-        <ReviewItem label="Contract Name" value={form.name} />
-        <ReviewItem label="Contract Type" value={form.contract_type} />
-        <ReviewItem label="First Party" value={form.first_party} />
-        <ReviewItem label="Second Party" value={form.second_party} />
-        <ReviewItem label="First Party Address" value={form.first_address} />
-        <ReviewItem label="Second Party Address" value={form.second_address} />
-        <ReviewItem label="First Party Contact" value={form.first_contact} />
-        <ReviewItem label="Second Party Contact" value={form.second_contact} />
-        <ReviewItem label="Contract Value" value={`Rp ${Number(form.value_rp || 0).toLocaleString('id-ID')}`} />
-        <ReviewItem label="Duration" value={`${form.duration_months || '-'} months`} />
-        <ReviewItem label="Start Date" value={form.start_date || '-'} />
-        <ReviewItem label="End Date" value={form.end_date || '-'} />
-        <ReviewItem label="Summary" value={form.summary} fullWidth />
-        <ReviewItem label="Key Clauses" value={form.key_clauses} fullWidth />
-      </dl>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Contract Parties</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SummaryField label="First Party" value={form.first_party || '-'} />
+          <SummaryField label="Second Party" value={form.second_party || '-'} />
+          <SummaryField label="Contract Type" className="md:col-span-2">
+            {form.contract_type ? (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                {form.contract_type}
+              </span>
+            ) : (
+              <span className="text-slate-500">-</span>
+            )}
+          </SummaryField>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Contract Details</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SummaryField label="Contract Value">
+            <div className="space-y-1">
+              <div className="text-lg font-semibold text-emerald-600">{formattedValue}</div>
+              {valueInWords && <div className="text-xs text-emerald-700">{valueInWords}</div>}
+            </div>
+          </SummaryField>
+          <SummaryField label="Contract Duration" value={`${form.duration_months || '-'} ${form.duration_unit}`} />
+          <SummaryField label="Start Date" value={formatDate(form.start_date)} />
+          <SummaryField label="End Date" value={formatDate(form.end_date)} />
+          <SummaryField label="Payment Method" value={form.payment_method || '-'} />
+          <SummaryField label="Payment Terms" value={form.payment_terms || '-'} />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-slate-600">Key Clauses</h3>
+        <div className="grid gap-3">
+          {keyClauseItems.map((item) => (
+            <ClauseCard key={item.title} title={item.title} value={item.value} />
+          ))}
+          {form.summary && <ClauseCard title="Contract Summary" value={form.summary} />}
+        </div>
+        <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <span className="text-base">?</span>
+          Menggunakan template standar ILCS
+        </div>
+      </section>
     </div>
   )
 }
 
-function ReviewItem({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) {
+function SummaryField({ label, value, className, children }: { label: string; value?: string; className?: string; children?: React.ReactNode }) {
   return (
-    <div className={`${fullWidth ? 'md:col-span-2' : ''} space-y-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3`}>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="text-sm text-slate-700">{value || '-'}</dd>
+    <div className={`rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 ${className ?? ''}`}>
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-sm text-slate-700">{children ?? value ?? '-'}</div>
+    </div>
+  )
+}
+
+function ClauseCard({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="space-y-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</div>
+      <div className="text-sm text-slate-700 whitespace-pre-wrap">{value || '-'}</div>
     </div>
   )
 }
