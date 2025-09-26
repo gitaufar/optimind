@@ -1,27 +1,32 @@
 import pandas as pd
+import re
 
-# Load dataset
-df = pd.read_csv("master_clauses.csv")
+# Load
+df = pd.read_csv("master_clauses_translated.csv")
 
-print("Jumlah kolom awal:", len(df.columns))
+# Ambil hanya kolom _id (hasil terjemahan)
+id_cols = [col for col in df.columns if col.endswith("_id")]
+df_id = df[id_cols]
 
-# 1. Drop kolom metadata yang tidak dibutuhkan
-meta_cols = ["Filename", "Document Name", "Document Name-Answer"]
-df_clean = df.drop(columns=[c for c in meta_cols if c in df.columns])
+# Hilangkan baris kosong (semua [] / NaN)
+df_id = df_id.replace(r'^\s*\[\s*\]$', '', regex=True)  # hapus []
+df_id = df_id.dropna(how="all")
 
-# 2. Hapus baris yang semua klausul kosong (NaN semua)
-df_clean = df_clean.dropna(how="all")
+# Bersihkan artefak teks
+def clean_text(text):
+    if pd.isna(text):
+        return ""
+    text = re.sub(r'\[|\]|"|Font color.*?#.*?\)', '', text)  # buang [] dan font color
+    text = re.sub(r'\s+', ' ', text).strip()  # normalisasi spasi
+    return text
 
-# 3. Isi nilai kosong dengan string kosong biar rapi
-df_clean = df_clean.fillna("")
+for col in df_id.columns:
+    df_id[col] = df_id[col].apply(clean_text)
 
-# 4. Rapikan nama kolom (hapus spasi berlebih)
-df_clean.columns = [c.strip() for c in df_clean.columns]
+# Contoh: gabungkan semua klausul per baris jadi satu teks
+df_id["clause_text"] = df_id.apply(lambda row: " ".join([str(val) for val in row if val]), axis=1)
 
-print("Jumlah kolom setelah clean:", len(df_clean.columns))
-print("Contoh kolom:", df_clean.columns[:10])
-print("Jumlah baris:", len(df_clean))
+# Tambahkan kolom label risiko (sementara kosong, isi manual/heuristik)
+df_id["risk_level"] = ""
 
-# Simpan hasil
-df_clean.to_csv("master_clauses_clean.csv", index=False, encoding="utf-8")
-print("✅ Dataset bersih disimpan ke master_clauses_clean.csv")
+print(df_id[["clause_text", "risk_level"]].head())
