@@ -1,5 +1,5 @@
 ﻿export type Risk = 'Low'|'Medium'|'High'
-export type Status = 'Draft'|'Pending Review'|'Reviewed'|'Approved'|'Revision Requested'|'Rejected'|'Active'|'Expired'
+export type Status = 'Draft'|'Submitted'|'Reviewed'|'Approved'|'Revision Requested'|'Rejected'|'Active'|'Expired'
 
 export type ContractRow = {
   id: string

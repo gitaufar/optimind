@@ -7,7 +7,6 @@ const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/procurement/draft', label: 'Draft Contract' },
   { to: '/procurement/upload', label: 'Upload Contract' },
   { to: '/procurement/status', label: 'Status Tracking' },
-  { to: '/procurement/settings', label: 'Settings' },
 ]
 
 function getInitials(name: string | null | undefined) {
@@ -46,8 +45,7 @@ export default function ProcurementLayout() {
               OM
             </div>
             <div className="hidden group-hover:block">
-              <div className="text-sm font-semibold text-slate-800">OptiMind</div>
-              <div className="text-xs text-slate-500">Contract Suite</div>
+              <div className="text-sm font-semibold text-slate-800">OptiMind | ILCS</div>
             </div>
           </div>
           <nav className="flex-1 space-y-1 px-2 pb-6">
@@ -57,15 +55,57 @@ export default function ProcurementLayout() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 justify-center group-hover:justify-start ${
-                    isActive ? 'bg-[#357ABD] text-white shadow' : 'text-slate-500 hover:bg-slate-100'
+                  `group/nav flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 justify-center group-hover:justify-start ${
+                    isActive
+                      ? 'bg-[#357ABD] text-white shadow'
+                      : 'bg-transparent text-slate-900 hover:bg-slate-100'
                   }`
                 }
               >
-                <span className="h-2 w-2 rounded-full bg-slate-300 group-hover:bg-[#357ABD]"></span>
-                <span className="hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100">
-                  {item.label}
-                </span>
+                {({ isActive }) => (
+                  <>
+                    <div className={`h-5 w-5 flex items-center justify-center ${
+                      isActive ? 'text-white' : 'text-slate-600 group-hover:text-slate-900'
+                    }`}>
+                      {item.label === 'Dashboard' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M3 3v18h18"/>
+                          <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                        </svg>
+                      )}
+                      {item.label === 'Draft Contract' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14,2 14,8 20,8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                          <polyline points="10,9 9,9 8,9"/>
+                          <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                      )}
+                      {item.label === 'Upload Contract' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7,10 12,15 17,10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      )}
+                      {item.label === 'Status Tracking' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M9 11l3 3L22 4"/>
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span
+                      className={`hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100 ${
+                        isActive ? 'text-white group-hover:text-white' : 'text-slate-900 group-hover:text-slate-900'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -75,23 +115,8 @@ export default function ProcurementLayout() {
         <header className="flex items-center gap-4 bg-white px-6 py-4 shadow-sm">
           <div className="hidden w-[76px] md:block" aria-hidden />
           <div className="flex flex-1 items-center justify-center">
-            <div className="flex w-full max-w-md items-center gap-3 rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-500">
-              <svg
-                className="h-4 w-4 text-slate-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <line x1="16.65" y1="16.65" x2="21" y2="21" />
-              </svg>
-              <input
-                placeholder="Search contracts..."
-                className="w-full border-none bg-transparent focus:outline-none"
-              />
+            <div className="text-center">
+              <h1 className="text-lg font-semibold text-slate-800">Procurement</h1>
             </div>
           </div>
           <div className="relative flex items-center">

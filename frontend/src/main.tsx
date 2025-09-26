@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
@@ -17,7 +17,6 @@ import ProcurementDashboard from './routes/procurement/Dashboard'
 import DraftContract from './routes/procurement/Draft'
 import UploadContract from './routes/procurement/Upload'
 import StatusTracking from './routes/procurement/Status'
-import ProcurementSettings from './routes/procurement/Settings'
 
 // Legal
 import LegalLayout from './routes/legal/Layout'
@@ -25,11 +24,18 @@ import LegalDashboard from './routes/legal/Dashboard'
 import LegalInbox from './routes/legal/Inbox'
 import LegalRiskCenter from './routes/legal/RiskCenter'
 import LegalAnalyzer from './routes/legal/Analyzer'
-import LegalSettings from './routes/legal/Settings'
 import ContractDetail from './routes/legal/ContractDetail'
 
 // Management
-import Management from './routes/management/Index'
+import {
+  Layout as ManagementLayout,
+  KPIMonitoring,
+  RiskHeatmap,
+  LifecycleTimeline,
+  Reports,
+  Settings as ManagementSettings
+} from './routes/management'
+import ManagementContractDetail from './routes/management/ContractDetail'
 
 const router = createBrowserRouter([
   { path: '/', element: <Login /> },
@@ -49,7 +55,6 @@ const router = createBrowserRouter([
       { path: 'draft', element: <DraftContract /> },
       { path: 'upload', element: <UploadContract /> },
       { path: 'status', element: <StatusTracking /> },
-      { path: 'settings', element: <ProcurementSettings /> },
     ],
   },
   {
@@ -64,7 +69,6 @@ const router = createBrowserRouter([
       { path: 'inbox', element: <LegalInbox /> },
       { path: 'risk-center', element: <LegalRiskCenter /> },
       { path: 'ai-analyzer', element: <LegalAnalyzer /> },
-      { path: 'settings', element: <LegalSettings /> },
       { path: 'contracts/:id', element: <ContractDetail /> },
     ],
   },
@@ -72,9 +76,18 @@ const router = createBrowserRouter([
     path: '/management',
     element: (
       <ProtectedRoute allow={['management']}>
-        <Management />
+        <ManagementLayout />
       </ProtectedRoute>
     ),
+    children: [
+      { index: true, element: <KPIMonitoring /> },
+      { path: 'kpi', element: <KPIMonitoring /> },
+      { path: 'risk-heatmap', element: <RiskHeatmap /> },
+      { path: 'lifecycle', element: <LifecycleTimeline /> },
+      { path: 'reports', element: <Reports /> },
+      { path: 'contracts/:id', element: <ManagementContractDetail /> },
+      { path: 'settings', element: <ManagementSettings /> },
+    ],
   },
 ])
 

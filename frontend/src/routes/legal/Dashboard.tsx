@@ -98,6 +98,7 @@ export default function LegalDashboard() {
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Metric({ value }: { value: any }) {
   return <div className="text-3xl font-bold">{value ?? 0}</div>
 }

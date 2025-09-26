@@ -27,6 +27,11 @@ models/indo_bert/
 backend/config/
 .env
 
+# Dummy Data (optional - uncomment if you don't want to track)
+# dummy_data.sql
+# insert_dummy_data.py
+# cleanup_dummy_data.sql
+
 # Editors
 .vscode/
 .idea/

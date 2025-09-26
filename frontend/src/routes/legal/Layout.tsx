@@ -7,7 +7,6 @@ const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/legal/inbox', label: 'Contract Inbox' },
   { to: '/legal/risk-center', label: 'Risk Center' },
   { to: '/legal/ai-analyzer', label: 'AI Analyzer' },
-  { to: '/legal/settings', label: 'Settings' },
 ]
 
 function getInitials(name: string | null | undefined) {
@@ -46,8 +45,7 @@ export default function LegalLayout() {
               OM
             </div>
             <div className="hidden group-hover:block">
-              <div className="text-sm font-semibold text-slate-800">OptiMind</div>
-              <div className="text-xs text-slate-500">Legal Suite</div>
+              <div className="text-sm font-semibold text-slate-800">OptiMind | ILCS</div>
             </div>
           </div>
           <nav className="flex-1 space-y-1 px-2 pb-6">
@@ -57,15 +55,29 @@ export default function LegalLayout() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 justify-center group-hover:justify-start ${
-                    isActive ? 'bg-[#357ABD] text-white shadow' : 'text-slate-500 hover:bg-slate-100'
+                  `group/nav flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 justify-center group-hover:justify-start ${
+                    isActive
+                      ? 'bg-[#357ABD] text-white shadow'
+                      : 'bg-transparent text-slate-900 hover:bg-slate-100'
                   }`
                 }
               >
-                <span className="h-2 w-2 rounded-full bg-slate-300 group-hover:bg-[#357ABD]"></span>
-                <span className="hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100">
-                  {item.label}
-                </span>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        isActive ? 'bg-white' : 'bg-slate-300'
+                      } group-hover:bg-white`}
+                    />
+                    <span
+                      className={`hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100 ${
+                        isActive ? 'text-white group-hover:text-white' : 'text-slate-900 group-hover:text-slate-900'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -75,7 +87,7 @@ export default function LegalLayout() {
         <header className="flex items-center gap-4 bg-white px-6 py-4 shadow-sm">
           <div className="hidden w-[76px] md:block" aria-hidden />
           <div className="flex flex-1 items-center justify-center">
-            <div className="flex w-full max-w-md items-center gap-3 rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-500">
+            <div className="flex w-full max-w-md items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-500">
               <svg
                 className="h-4 w-4 text-slate-400"
                 viewBox="0 0 24 24"
@@ -90,7 +102,7 @@ export default function LegalLayout() {
               </svg>
               <input
                 placeholder="Search contracts..."
-                className="w-full border-none bg-transparent focus:outline-none"
+                className="w-full border-none bg-transparent text-slate-700 focus:outline-none"
               />
             </div>
           </div>
