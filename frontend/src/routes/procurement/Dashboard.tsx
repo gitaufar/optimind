@@ -6,11 +6,11 @@ import { useProcurementKPI, useContractsList } from '@/hooks/useProcurement'
 import type { ContractRow, Status } from '@/types/procurement'
 
 const STATUS_BADGE: Partial<Record<Status, string>> = {
-  Draft: 'bg-slate-100 text-slate-600 border border-slate-200',
-  Submitted: 'bg-blue-100 text-blue-700 border border-blue-200',
-  Reviewed: 'bg-amber-100 text-amber-700 border border-amber-200',
-  Approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  'Revision Requested': 'bg-rose-100 text-rose-700 border border-rose-200',
+  Draft: 'bg-blue-100 text-blue-700 border border-blue-200',
+  Submitted: 'bg-orange-100 text-orange-700 border border-orange-200',
+  Reviewed: 'bg-orange-100 text-orange-700 border border-orange-200',
+  Approved: 'bg-green-100 text-green-700 border border-green-200',
+  'Revision Requested': 'bg-red-100 text-red-700 border border-red-200',
   Rejected: 'bg-red-100 text-red-700 border border-red-200',
   Active: 'bg-green-100 text-green-700 border border-green-200',
   Expired: 'bg-slate-200 text-slate-600 border border-slate-300',
@@ -246,14 +246,15 @@ function Row({ row }: { row: ContractRow }) {
       <td className="px-6 py-4 font-semibold text-slate-800">{formatValue(row.value_rp)}</td>
       <td className="px-6 py-4 text-slate-600">{formatDate(row.created_at)}</td>
       <td className="px-6 py-4">
-        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
+        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
+          {getStatusIcon(row.status)}
           {formatStatus(row.status)}
         </span>
       </td>
       <td className="px-6 py-4 text-right">
         <a
           href={`/procurement/status`}
-          className="inline-flex items-center rounded-full bg-[#357ABD]/10 px-3 py-1 text-xs font-semibold text-[#357ABD] transition hover:bg-[#357ABD]/20"
+          className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-600"
         >
           View Details
         </a>
@@ -290,6 +291,61 @@ function formatDate(value: string): string {
   return dateFormatter.format(date)
 }
 
+function getStatusIcon(status: Status): React.ReactNode {
+  switch (status) {
+    case 'Draft':
+      return (
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+        </svg>
+      )
+    case 'Submitted':
+    case 'Reviewed':
+      return (
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      )
+    case 'Approved':
+      return (
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      )
+    case 'Revision Requested':
+      return (
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      )
+    default:
+      return null
+  }
+}
+
 function formatStatus(status: Status): string {
-  return status.replace(/_/g, ' ')
+  switch (status) {
+    case 'Submitted':
+      return 'Pending Legal'
+    case 'Reviewed':
+      return 'Pending Legal'
+    case 'Approved':
+      return 'Approved Manager'
+    case 'Revision Requested':
+      return 'Revision Requested'
+    case 'Draft':
+      return 'Draft'
+    case 'Rejected':
+      return 'Rejected'
+    case 'Active':
+      return 'Active'
+    case 'Expired':
+      return 'Expired'
+    default:
+      return status.replace(/_/g, ' ')
+  }
 }

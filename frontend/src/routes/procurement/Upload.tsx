@@ -254,10 +254,22 @@ export default function UploadContract() {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-800">Tips Upload</h3>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>• File maksimal 10MB</li>
-              <li>• Format: PDF, DOCX, TXT</li>
-              <li>• Pastikan teks dapat dibaca</li>
-              <li>• Hindari scan berkualitas rendah</li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                File maksimal 10MB
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                Format: PDF, DOCX, TXT
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                Pastikan teks dapat dibaca
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                Hindari scan berkualitas rendah
+              </li>
             </ul>
           </section>
         </aside>
@@ -351,9 +363,9 @@ function formatStatusLabel(status: Status): string {
 }
 
 function formatRelativeTime(isoDate: string): string {
-  if (!isoDate) return '—'
+  if (!isoDate) return 'N/A'
   const date = new Date(isoDate)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return 'N/A'
   const diffMs = Date.now() - date.getTime()
   const diffMinutes = Math.floor(diffMs / (1000 * 60))
   if (diffMinutes < 1) return 'Baru saja'
