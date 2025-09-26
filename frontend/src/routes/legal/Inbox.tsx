@@ -1,14 +1,11 @@
 "use client"
 import { useState, useMemo } from 'react'
 import type { ChangeEvent } from 'react'
-import { Link } from 'react-router-dom'
 import Card from '@/components/Card'
 import { useContracts } from '@/hooks/useContracts'
 import ContractListLegal from '@/components/Legal/ContractListLegal'
 
-
-
-const STATUS = ['All', 'Pending Review', 'Reviewed', 'Approved'] as const
+const STATUS = ['All', 'Submitted', 'Reviewed', 'Approved'] as const
 const RISK = ['All', 'Low', 'Medium', 'High'] as const
 
 type StatusFilter = typeof STATUS[number]
@@ -17,7 +14,7 @@ type RiskFilter = typeof RISK[number]
 export default function LegalInbox() {
   const [status, setStatus] = useState<StatusFilter>('All')
   const [risk, setRisk] = useState<RiskFilter>('All')
-  const { items, loading } = useContracts({ status, risk })
+  const { items } = useContracts({ status, risk })
 
   const contractsMapped = useMemo(
     () =>
@@ -44,7 +41,6 @@ export default function LegalInbox() {
           Manage and review incoming contracts
         </div>
       </div>
-      
 
       <Card>
         <div className="flex flex-wrap items-center gap-3">
