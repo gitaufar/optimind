@@ -175,14 +175,17 @@ export default function ContractDetail() {
     <div className="space-y-6">
       <CardDetailContract contract={contractDetails} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <RiskAnalysisCard risks={analysisData} />
-        {/* AI Recommendation dari ai_risk_analysis.analysis_result */}
-        <InteractiveDocumentViewer
+      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-8 lg:grid-cols-2 items-start">
+        <div className="h-full">
+          <RiskAnalysisCard risks={analysisData} />
+        </div>
+        <div className="h-full">
+          <InteractiveDocumentViewer
           documentTitle={`AI Risk Analysis - ${aiRecommendationData.riskLevel} Risk (${Math.round((aiRecommendationData.confidence || 0) * 100)}% confidence)`}
           sections={aiRecommendationData.sections}
           suggestions={aiRecommendationData.suggestions}
         />
+        </div>
       </div>
 
       <LegalNotes notes={formattedNotes} onSaveNote={handleSaveNote} />

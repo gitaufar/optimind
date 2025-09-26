@@ -69,12 +69,7 @@ export default function InteractiveDocumentViewer({ documentTitle, sections, sug
     <>
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm h-full">
         <div className="flex items-center justify-between border-b border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-800">Contract Document</h2>
-          <div className="flex items-center gap-4 text-gray-500">
-            <button className="hover:text-gray-800"><ZoomOut size={18} /></button>
-            <button className="hover:text-gray-800"><ZoomIn size={18} /></button>
-            <button className="hover:text-gray-800"><Download size={18} /></button>
-          </div>
+          <h2 className="text-xl font-bold text-gray-900">Contract Document</h2>
         </div>
         <div className="p-6">
           <div className="rounded-md bg-gray-50 p-8 shadow-inner">

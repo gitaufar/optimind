@@ -62,7 +62,7 @@ function RiskAnalysisItem({ item }: { item: RiskItem }) {
 // Komponen Utama: RiskAnalysisCard
 export default function RiskAnalysisCard({ risks }: RiskAnalysisCardProps) {
   return (
-    <div className="max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="w-full h-full rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Risk Analysis</h2>
         <span className="text-sm font-semibold text-gray-500">AI Detected</span>

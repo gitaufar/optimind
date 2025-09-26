@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/AuthProvider'
+import Logo from '@/assets/logo.svg'
 
 const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/management', label: 'KPI Monitoring', end: true },
@@ -43,7 +44,7 @@ export default function ManagementLayout() {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-3 px-4 py-5">
             <div className="grid h-10 w-10 place-items-center rounded-full bg-[#357ABD]/10 text-sm font-semibold text-[#357ABD]">
-              OM
+              <img src={Logo} alt="OptiMind Logo" className="h-6 w-6" />
             </div>
             <div className="hidden group-hover:block">
               <div className="text-sm font-semibold text-slate-800">OptiMind</div>

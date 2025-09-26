@@ -5,6 +5,7 @@ import { useAnalyzer, useContracts, useLegalKPI } from '@/hooks/useContracts'
 import ContractListLegal from '@/components/Legal/ContractListLegal'
 import CardDashboard from '@/components/Legal/CardDashboard'
 import { FileText, AlertTriangle, Clock, RefreshCw } from 'lucide-react'
+import RiskRadar from '@/components/Legal/RiskRadar'
 
 export default function LegalDashboard() {
   const { kpi, loading: kpiLoading, error: kpiError, refresh: refreshKPI } = useLegalKPI()
@@ -51,6 +52,18 @@ export default function LegalDashboard() {
       })),
     [items]
   )
+
+  const riskFindings = useMemo(
+    () =>
+      (findings ?? []).slice(0, 5).map((f: any) => ({
+        id: String(f.id ?? `${f.section ?? 'unknown'}-${f.title ?? ''}`),
+        level: ['High', 'Medium', 'Low'].includes(f.level) ? (f.level as 'High' | 'Medium' | 'Low') : 'Low',
+        title: f.section ?? 'Unknown Section',
+        description: f.title ?? f.description ?? '-',
+      })),
+    [findings]
+  )
+
 
   return (
     <div className="grid gap-6">
@@ -125,39 +138,7 @@ export default function LegalDashboard() {
             )}
           </Card>
 
-          <Card 
-            title="Risk Radar" 
-            paragraph={`${findings.length} risk findings detected by AI`}
-          >
-            {findings.length === 0 ? (
-              <div className="text-sm text-gray-600">Belum ada temuan risiko.</div>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {findings.slice(0, 5).map((f) => (
-                  <li key={f.id} className="border-l-4 border-red-400 pl-3 py-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900">
-                        {f.section ?? 'Unknown Section'}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        f.level === 'High' ? 'bg-red-100 text-red-800' :
-                        f.level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {f.level} Risk
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-1">{f.title}</p>
-                  </li>
-                ))}
-                {findings.length > 5 && (
-                  <li className="text-xs text-gray-500 border-t pt-2">
-                    +{findings.length - 5} more findings...
-                  </li>
-                )}
-              </ul>
-            )}
-          </Card>
+          <RiskRadar findings={riskFindings} />
         </div>
       </div>
     </div>

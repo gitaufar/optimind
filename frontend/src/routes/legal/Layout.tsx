@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/AuthProvider'
+import { LineChart, Inbox, AlertTriangle } from 'lucide-react'
+import Logo from '@/assets/logo.svg'
 
-const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
-  { to: '/legal', label: 'Dashboard', end: true },
-  { to: '/legal/inbox', label: 'Contract Inbox' },
-  { to: '/legal/risk-center', label: 'Risk Center' },
+const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean; icon: LucideIcon }> = [
+  { to: '/legal', label: 'Dashboard', end: true, icon: LineChart },
+  { to: '/legal/inbox', label: 'Contract Inbox', icon: Inbox },
+  { to: '/legal/risk-center', label: 'Risk Center', icon: AlertTriangle },
 ]
 
 function getInitials(name: string | null | undefined) {
@@ -41,7 +43,7 @@ export default function LegalLayout() {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-3 px-4 py-5">
             <div className="grid h-10 w-10 place-items-center rounded-full bg-[#357ABD]/10 text-sm font-semibold text-[#357ABD]">
-              OM
+              <img src={Logo} alt="OptiMind Logo" className="h-6 w-6" />
             </div>
             <div className="hidden group-hover:block">
               <div className="text-sm font-semibold text-slate-800">OptiMind | ILCS</div>
@@ -61,22 +63,26 @@ export default function LegalLayout() {
                   }`
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        isActive ? 'bg-white' : 'bg-slate-300'
-                      } group-hover:bg-white`}
-                    />
-                    <span
-                      className={`hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100 ${
-                        isActive ? 'text-white group-hover:text-white' : 'text-slate-900 group-hover:text-slate-900'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </>
-                )}
+                {({ isActive }) => {
+                  const Icon = item.icon
+                  return (
+                    <>
+                      <Icon
+                        className={`h-5 w-5 flex-shrink-0 ${
+                          isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-900'
+                        }`}
+                        aria-hidden
+                      />
+                      <span
+                        className={`hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100 ${
+                          isActive ? 'text-white group-hover:text-white' : 'text-slate-900 group-hover:text-slate-900'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </>
+                  )
+                }}
               </NavLink>
             ))}
           </nav>
