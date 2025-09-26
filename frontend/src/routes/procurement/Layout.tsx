@@ -64,11 +64,39 @@ export default function ProcurementLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        isActive ? 'bg-white' : 'bg-slate-300'
-                      } group-hover:bg-white`}
-                    />
+                    <div className={`h-5 w-5 flex items-center justify-center ${
+                      isActive ? 'text-white' : 'text-slate-600 group-hover:text-slate-900'
+                    }`}>
+                      {item.label === 'Dashboard' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M3 3v18h18"/>
+                          <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                        </svg>
+                      )}
+                      {item.label === 'Draft Contract' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14,2 14,8 20,8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                          <polyline points="10,9 9,9 8,9"/>
+                          <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                      )}
+                      {item.label === 'Upload Contract' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7,10 12,15 17,10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      )}
+                      {item.label === 'Status Tracking' && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M9 11l3 3L22 4"/>
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                      )}
+                    </div>
                     <span
                       className={`hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100 ${
                         isActive ? 'text-white group-hover:text-white' : 'text-slate-900 group-hover:text-slate-900'

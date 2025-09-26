@@ -173,8 +173,8 @@ function StatusRow({ row }: { row: ContractRow }) {
         <div className="text-xs text-slate-500">Contract #{row.id.slice(0, 8).toUpperCase()}</div>
       </td>
       <td className="px-6 py-4">
-        <div className="text-slate-800">{row.first_party ?? '—'}</div>
-        <div className="text-xs text-slate-500">{row.second_party ?? '—'}</div>
+        <div className="text-slate-800">{row.first_party || 'N/A'}</div>
+        <div className="text-xs text-slate-500">{row.second_party || 'N/A'}</div>
       </td>
       <td className="px-6 py-4">
         <div className="font-semibold text-slate-800">{formatValueShort(row.value_rp)}</div>
@@ -189,7 +189,7 @@ function StatusRow({ row }: { row: ContractRow }) {
       </td>
       <td className="px-6 py-4">
         <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${riskClass}`}>
-          {row.risk ?? '—'}
+          {row.risk || 'N/A'}
         </span>
       </td>
       <td className="px-6 py-4 text-slate-500">{formatRelativeTime(row.updated_at ?? row.created_at)}</td>
@@ -251,14 +251,14 @@ function formatStatusLabel(status: Status): string {
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value) return 'N/A'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return 'N/A'
   return DATE_DISPLAY_FORMATTER.format(date)
 }
 
 function formatValueShort(value: number | null): string {
-  if (!value) return '—'
+  if (!value) return 'N/A'
   if (value >= 1_000_000_000) {
     return `Rp ${(value / 1_000_000_000).toFixed(1)}B`
   }
@@ -270,18 +270,18 @@ function formatValueShort(value: number | null): string {
 
 function formatDuration(row: ContractRow): string {
   if (row.start_date && row.end_date) {
-    return `${formatDate(row.start_date)} – ${formatDate(row.end_date)}`
+    return `${formatDate(row.start_date)} - ${formatDate(row.end_date)}`
   }
   if (row.duration_months) {
     return `${row.duration_months} months`
   }
-  return '—'
+  return 'N/A'
 }
 
 function formatRelativeTime(isoDate: string): string {
-  if (!isoDate) return '—'
+  if (!isoDate) return 'N/A'
   const date = new Date(isoDate)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return 'N/A'
   const diffMs = Date.now() - date.getTime()
   const diffMinutes = Math.floor(diffMs / (1000 * 60))
   if (diffMinutes < 1) return 'Just now'

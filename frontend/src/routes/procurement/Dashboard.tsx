@@ -21,7 +21,7 @@ const STATUS_FILTERS: Array<{ id: 'all' | 'approved' | 'review' | 'new'; label: 
 ]
 
 const numberFormatter = new Intl.NumberFormat('id-ID')
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
+const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
@@ -60,22 +60,35 @@ export default function ProcurementDashboard() {
           title="New Contracts"
           value={kpi?.new_this_month ?? 0}
           helper={formatDelta(deltaPct)}
-          icon="?"
-          iconClass="bg-blue-50 text-blue-500"
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          }
+          iconClass="bg-blue-50 text-blue-600"
         />
         <MetricCard
           title="Pending Legal Review"
           value={kpi?.pending_legal_review ?? 0}
           helper="Awaiting action"
-          icon="?"
-          iconClass="bg-amber-50 text-amber-500"
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          }
+          iconClass="bg-amber-50 text-amber-600"
         />
         <MetricCard
           title="Approved Contracts"
           value={kpi?.approved_cnt ?? 0}
-          helper={`$${formatApprovalRate(kpi?.approval_rate_pct ?? 0)} approval rate`}
-          icon="?"
-          iconClass="bg-emerald-50 text-emerald-500"
+          helper={`${formatApprovalRate(kpi?.approval_rate_pct ?? 0)} approval rate`}
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          }
+          iconClass="bg-emerald-50 text-emerald-600"
         />
       </section>
 
@@ -148,7 +161,7 @@ function MetricCard({
   title: string
   value: number
   helper: string
-  icon: string
+  icon: React.ReactNode
   iconClass: string
 }) {
   return (
@@ -159,7 +172,7 @@ function MetricCard({
           <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
           <p className="mt-1 text-xs text-emerald-600">{helper}</p>
         </div>
-        <span className={`grid h-10 w-10 place-items-center rounded-xl text-lg ${iconClass}`}>{icon}</span>
+        <span className={`grid h-10 w-10 place-items-center rounded-xl ${iconClass}`}>{icon}</span>
       </div>
     </div>
   )
@@ -175,8 +188,8 @@ function Row({ row }: { row: ContractRow }) {
         <div className="text-xs text-slate-500">{row.name || 'Untitled contract'}</div>
       </td>
       <td className="px-6 py-4">
-        <div className="text-slate-800">{row.first_party ?? '—'}</div>
-        <div className="text-xs text-slate-500">{row.second_party ?? '—'}</div>
+        <div className="text-slate-800">{row.first_party || 'N/A'}</div>
+        <div className="text-xs text-slate-500">{row.second_party || 'N/A'}</div>
       </td>
       <td className="px-6 py-4 font-semibold text-slate-800">{formatValue(row.value_rp)}</td>
       <td className="px-6 py-4 text-slate-600">{formatDate(row.created_at)}</td>
@@ -204,7 +217,7 @@ function formatDelta(value: number): string {
 }
 
 function formatApprovalRate(rate: number): string {
-  return rate.toFixed(0) + '%'
+  return `${Math.round(rate)}%`
 }
 
 function formatValue(value: number | null): string {
@@ -219,9 +232,9 @@ function formatValue(value: number | null): string {
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value) return 'ï¿½'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return 'ï¿½'
   return dateFormatter.format(date)
 }
 
