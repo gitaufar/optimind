@@ -17,7 +17,8 @@ const CONTRACT_TYPES = [
 ]
 
 const STATUS_BADGE: Partial<Record<Status, string>> = {
-  'Pending Review': 'bg-amber-100 text-amber-700 border border-amber-200',
+  Submitted: 'bg-gray-100 text-gray-600 border border-gray-300',
+  Reviewed: 'bg-orange-100 text-orange-700 border border-orange-200',
   Approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   'Revision Requested': 'bg-rose-100 text-rose-700 border border-rose-200',
   Draft: 'bg-slate-100 text-slate-600 border border-slate-200',
@@ -95,7 +96,7 @@ export default function UploadContract() {
         {
           name: meta.name,
           value_rp: meta.value_rp || null,
-          status: 'Pending Review',
+          status: 'Submitted',
           created_by: session?.user?.id ?? null,
         },
       ])
@@ -339,8 +340,10 @@ function LatestStatusCard({ contract, highlight }: { contract: ContractRow; high
 
 function statusMessage(status: Status): string {
   switch (status) {
-    case 'Pending Review':
+    case 'Submitted':
       return 'Sedang dianalisis AI Legal'
+    case 'Reviewed':
+      return 'Review selesai - menunggu approval'
     case 'Approved':
       return 'Analisis selesai - siap ditandatangani'
     case 'Revision Requested':
@@ -359,7 +362,26 @@ function statusMessage(status: Status): string {
 }
 
 function formatStatusLabel(status: Status): string {
-  return status.replace(/_/g, ' ')
+  switch (status) {
+    case 'Submitted':
+      return 'Submitted'
+    case 'Reviewed':
+      return 'Reviewed'
+    case 'Approved':
+      return 'Approved'
+    case 'Revision Requested':
+      return 'Revision Requested'
+    case 'Draft':
+      return 'Draft'
+    case 'Rejected':
+      return 'Rejected'
+    case 'Active':
+      return 'Active'
+    case 'Expired':
+      return 'Expired'
+    default:
+      return status.replace(/_/g, ' ')
+  }
 }
 
 function formatRelativeTime(isoDate: string): string {

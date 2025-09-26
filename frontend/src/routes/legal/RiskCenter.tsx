@@ -90,6 +90,27 @@ export default function LegalRiskCenter() {
       </div>
     </div>
 
+      <div className="flex flex-row items-center justify-between mb-4">
+      {/* Bagian Kiri: Judul dan Subjudul */}
+      <div>
+        <div className="text-3xl font-bold">
+          Risk Center
+        </div>
+        <div className='text-sm text-gray-600'>
+          Monitor and manage contract clauses with potential risks
+        </div>
+      </div>
+
+      {/* Bagian Kanan: Tombol Export */}
+      <div>
+        <ButtonBlue
+          text="Export Report"
+          onClick={() => exportReport()}
+          iconRight={<Download size={16} />} // 2. Tambahkan ikon di sini
+        />
+      </div>
+    </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         <CardDashboard
           title="High Risk Clauses"

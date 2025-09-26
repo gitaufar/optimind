@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { ChangeEvent, InputHTMLAttributes } from 'react'
 import { useContractsList, useStatusFiltering } from '@/hooks/useProcurement'
 import type { ContractRow, Risk, Status } from '@/types/procurement'
@@ -26,7 +26,7 @@ const RISK_OPTIONS: Array<{ value: string; label: string }> = [
 
 const STATUS_BADGE: Partial<Record<Status, string>> = {
   Draft: 'bg-blue-100 text-blue-700 border border-blue-200',
-  Submitted: 'bg-orange-100 text-orange-700 border border-orange-200',
+  Submitted: 'bg-gray-100 text-gray-600 border border-gray-300',
   Reviewed: 'bg-orange-100 text-orange-700 border border-orange-200',
   Approved: 'bg-green-100 text-green-700 border border-green-200',
   'Revision Requested': 'bg-red-100 text-red-700 border border-red-200',
@@ -46,22 +46,35 @@ const DATE_DISPLAY_FORMATTER = new Intl.DateTimeFormat('en-US', { month: 'short'
 export default function StatusTracking() {
   const { rows, loading } = useContractsList()
   const { status, setStatus, risk, setRisk, q, setQ, from, setFrom, to, setTo, filtered } = useStatusFiltering(rows)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const summary = useMemo(() => ({
     total: rows.length,
     visible: filtered.length,
   }), [rows.length, filtered.length])
 
+  // Reset pagination when filters change
+  useMemo(() => {
+    setCurrentPage(1)
+  }, [status, risk, q, from, to])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRows = filtered.slice(startIndex, endIndex)
+
   // Filter contracts based on status and active/expired logic
   const displayRows = useMemo(() => {
     if (status === 'Active') {
-      return filtered.filter(row => isContractActive(row))
+      return paginatedRows.filter(row => isContractActive(row))
     }
     if (status === 'Expired') {
-      return filtered.filter(row => !isContractActive(row))
+      return paginatedRows.filter(row => !isContractActive(row))
     }
-    return filtered
-  }, [filtered, status])
+    return paginatedRows
+  }, [paginatedRows, status])
 
   return (
     <div className="space-y-6">
@@ -164,11 +177,44 @@ export default function StatusTracking() {
         </div>
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-6 py-4 text-xs text-slate-500">
           <span>
-            Showing {Math.min(displayRows.length, summary.total)} of {summary.total} contracts
+            Showing {startIndex + 1} to {Math.min(endIndex, filtered.length)} of {filtered.length} contracts
           </span>
-          <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Real-time updates enabled
+          <div className="flex items-center gap-2">
+            <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Real-time updates enabled
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`rounded px-2 py-1 ${
+                      currentPage === page
+                        ? 'bg-blue-500 text-white'
+                        : 'text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </footer>
       </section>
@@ -242,10 +288,10 @@ function StatusRow({ row }: { row: ContractRow }) {
       <td className="px-6 py-4 text-slate-500">{formatRelativeTime(row.updated_at ?? row.created_at)}</td>
       <td className="px-6 py-4 text-right">
         <a
-          href={`/procurement/status`}
-          className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-600"
+          href={`/procurement/contracts/${row.id}`}
+          className="inline-flex items-center rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-blue-600 whitespace-nowrap"
         >
-          View Details
+          <span className="text-white">View Details</span>
         </a>
       </td>
     </tr>
@@ -294,49 +340,17 @@ function FilterInput({ label, ...inputProps }: { label: string } & InputHTMLAttr
 }
 
 function getStatusIcon(status: Status): React.ReactNode {
-  switch (status) {
-    case 'Draft':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-        </svg>
-      )
-    case 'Submitted':
-    case 'Reviewed':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M12 6v6l4 2"/>
-        </svg>
-      )
-    case 'Approved':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 6L9 17l-5-5"/>
-        </svg>
-      )
-    case 'Revision Requested':
-      return (
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      )
-    default:
-      return null
-  }
+  return null
 }
 
 function formatStatusLabel(status: Status): string {
   switch (status) {
     case 'Submitted':
-      return 'Pending Legal'
+      return 'Submitted'
     case 'Reviewed':
-      return 'Pending Legal'
+      return 'Reviewed'
     case 'Approved':
-      return 'Approved Manager'
+      return 'Approved'
     case 'Revision Requested':
       return 'Revision Requested'
     case 'Draft':

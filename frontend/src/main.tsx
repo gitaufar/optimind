@@ -17,6 +17,7 @@ import ProcurementDashboard from './routes/procurement/Dashboard'
 import DraftContract from './routes/procurement/Draft'
 import UploadContract from './routes/procurement/Upload'
 import StatusTracking from './routes/procurement/Status'
+import ProcurementContractDetail from './routes/procurement/ContractDetail'
 
 // Legal
 import LegalLayout from './routes/legal/Layout'
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
       { path: 'draft', element: <DraftContract /> },
       { path: 'upload', element: <UploadContract /> },
       { path: 'status', element: <StatusTracking /> },
+      { path: 'contracts/:id', element: <ProcurementContractDetail /> },
     ],
   },
   {
