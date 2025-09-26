@@ -25,6 +25,7 @@ class ContractAnalysisResult(BaseModel):
     success: bool = True
     contract_details: Optional[ContractDetails] = None
     extracted_text: Optional[str] = None
+    ocr_file_path: Optional[str] = None  # Path to saved OCR result file
     confidence_score: Optional[float] = None
     analysis_method: str = "groq_ai"  # "groq_ai", "rule_based", "hybrid"
     error_message: Optional[str] = None

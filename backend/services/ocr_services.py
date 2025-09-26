@@ -4,6 +4,8 @@ import io
 from typing import Optional, List, Dict, Any
 from fastapi import UploadFile
 from pdf2image import convert_from_path
+import os
+from datetime import datetime
 
 try:
     import pytesseract
@@ -127,6 +129,75 @@ class OCRService:
         text = text.replace(' :', ':')
         
         return text.strip()
+    
+    def save_ocr_result(self, text: str, filename: str = None, output_dir: str = "data/outputs") -> str:
+        """Save OCR result to a text file"""
+        try:
+            # Create output directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Generate filename if not provided
+            if not filename:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"ocr_result_{timestamp}.txt"
+            
+            # Ensure .txt extension
+            if not filename.endswith('.txt'):
+                filename = filename.rsplit('.', 1)[0] + '.txt'
+            
+            # Full path
+            filepath = os.path.join(output_dir, filename)
+            
+            # Save text to file
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(f"OCR Extraction Result\n")
+                f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("=" * 50 + "\n\n")
+                f.write(text)
+            
+            print(f"OCR result saved to: {filepath}")
+            return filepath
+            
+        except Exception as e:
+            print(f"Failed to save OCR result: {str(e)}")
+            return ""
+    
+    async def extract_and_save_from_image(
+        self, 
+        file: UploadFile,
+        save_result: bool = True,
+        language: str = 'eng+ind'
+    ) -> tuple[str, str]:
+        """Extract text from image and optionally save result"""
+        # Extract text
+        extracted_text = await self.extract_text_from_image_file(file, language)
+        
+        filepath = ""
+        if save_result and extracted_text and not extracted_text.startswith("OCR"):
+            # Generate filename based on uploaded filename
+            original_name = file.filename.rsplit('.', 1)[0] if file.filename else "image"
+            filepath = self.save_ocr_result(extracted_text, f"{original_name}_ocr.txt")
+        
+        return extracted_text, filepath
+    
+    async def extract_and_save_from_pdf(
+        self, 
+        file: UploadFile,
+        save_result: bool = True,
+        dpi: int = 300,
+        language: str = 'eng+ind'
+    ) -> tuple[str, str]:
+        """Extract text from PDF and optionally save result"""
+        # Extract text
+        extracted_text = await self.extract_text_from_pdf_file(file, dpi, language)
+        
+        filepath = ""
+        if save_result and extracted_text and not extracted_text.startswith("PDF OCR"):
+            # Generate filename based on uploaded filename
+            original_name = file.filename.rsplit('.', 1)[0] if file.filename else "pdf"
+            filepath = self.save_ocr_result(extracted_text, f"{original_name}_ocr.txt")
+        
+        return extracted_text, filepath
 
 # Legacy functions for backward compatibility
 def ocr_image(image_path: str) -> str:

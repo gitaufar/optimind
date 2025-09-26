@@ -1,3 +1,7 @@
+OCR Extraction Result
+Generated on: 2025-09-26 18:03:27
+==================================================
+
 --- Page 1 ---
 SURAT PERJANJIAN KONTRAK KERJA
 Nomor : 20/HS/KBB-WPIII/2025
@@ -25,7 +29,7 @@ Alamat : Wisma Permai Tengah III/BB1 Surabaya
 Dalam hal ini bertindak untuk dan atas nama PEMILIK RUMAH TINGGAL WISMA
 
 PERMAI TENGAH III/BB1 yang selanjutnya dalam Perjanjian ini disebut sebagai
-PIHAK KESATU . -------------------------------------------0 2022-222 nnn nnn nnn ne nnn neem nn en nn enenene=
+PIHAK KESATU . -------------------------------------------2 20-22-22 nnn nne nnn nnn nn nn nnn en enenene=
 
 2. Nama : Ir. Achmad Ridho’l, ST.
 Status : Direktur CV. KARYA BABATAN
@@ -36,11 +40,12 @@ selanjutnya dalam Perjanjian ini disebut sebagai PIHAK KEDUA. ------------------
 
 Kedua belah pihak telah sepakat mengadakan ikatan Perjanjian, untuk
 melakasanakan Pekerjaan Pelaksanaan PEMBANGUNAN RUMAH TINGGAL
-WISMA PERMAI TENGAH III/BB1. Berdasarkan kesepakatan dan azas
+WISMA PERMAI TENGAH _III/BB1. Berdasarkan kesepakatan dan azas
 kepercayaan dengan ketentuan dan syarat-syarat sebagaimana tercantum dalam
 pasal-pasal tersebut di bawah ini
 
 PIHAK | PIHAK II
+
 
 
 --- Page 2 ---
@@ -89,13 +94,14 @@ bagian yang tak terpisahkan dari kontrak, yaitu :-------------------------------
 
 oaoo
 
-Surat Perjanjian Kerja (Kontrak) ini--------------------------------------mnnnnn nnn nnn nnn
+Surat Perjanjian Kerja (Kontrak) ini-----------------------------------------nmennnnnn nnn
 Spesifikasi Teknis/Rencana Kerja dan Syarat (RKS)----------------------------------
-Denah situasi/gambar termasuk perubahannya--------------------~--------------------
-Daftar kuantitas dan harga-----------------------------------nn nnn nnn nnn nnn nnnnnnnnnnnnnnnnn
+Denah situasi/gambar termasuk perubahannya-----------------------------------------
+Daftar kuantitas dan harga----------------------------------- mn nnn nn nnn nn nnn nnnn nnn nnnnnns
 Dokumen-dokumen lainnya yang tercantum dalam dokumen kontrak ini---------
 
 PIHAK | PIHAK II
+
 
 
 --- Page 3 ---
@@ -113,7 +119,7 @@ Pekerjaan Struktur Lantai 2
 
 Pekerjaan Struktur Atap
 
-N QO ar WN =
+N Oar wh s
 
 Pekerjaan Atap
 
@@ -129,7 +135,7 @@ Pekerjaan Pengecatan
 
 Pekerjaan Langit-langit
 
-oa FW DN
+Soa Se © Bf
 
 Pekerjaan Sanitair
 
@@ -155,8 +161,9 @@ dengan adanya kesepakatan secara tertulis oleh KEDUA BELAH PIHAK-------
 PIHAK | PIHAK II
 
 
+
 --- Page 4 ---
-on
+o
 
 PASAL : 5
 NILAI KONTRAK DAN CARA PEMBAYARAN
@@ -179,11 +186,11 @@ Pembayaran berdasarkan ketentuan sebagai berikut : -----------------------------
 Pembayaran Uang Muka
 Pekerjaan ini diberikan uang muka sebesar 25%
 
-Sebesar : 25% X Rp. 4.338.283.000,00 = Rp.1.084.570.750,-
+Sebesar : 25% xX Rp. 4.338.283.000,00 = Rp.1.084.570.750,-
 
 Terbilang “Satu miliar delapan puluh empat juta lima ratus tujuh
 puluh ribu tujuh ratus lima puluh rupiah”
-Termin Kesatu (I) :
+Termin Kesatu (l) :
 
 Dibayarkan setelah prestasi Pekerjaan Konstruksi mencapai 40% dan
 dinyatakan dalam Laporan Progress dengan perincian :
@@ -201,6 +208,7 @@ Terbilang :“Enam ratus lima puluh juta tujuh ratus empat puluh dua
 ribu empat ratus lima puluh rupiah”
 
 PIHAK | PIHAK II
+
 
 
 --- Page 5 ---
@@ -250,6 +258,7 @@ menandatangani berita acara serah terima yang kedua dan dianggap sebagai
 PIHAK | PIHAK II
 
 
+
 --- Page 6 ---
 PASAL : 7
 PENGAWAS LAPANGAN
@@ -273,7 +282,7 @@ tanggung jawab PIHAK KEDUA -----------------------------------------------------
 PASAL : 9
 PERUBAHAN PEKERJAAN
 
-1. Jika PIHAK KESATU mengadakan perubahan atas_ hasil karya
+1. Jika PIHAK KESATU mengadakan perubahan atas hasil karya
 perencanaan dari PIHAK KEDUA, maka sebelum dilakukan perubahan,
 kedua belah pihak harus bersama-sama menyepakati perubahan yang
 dilakukan oleh kedua belah pihak-------------------------------------------------------
@@ -305,10 +314,13 @@ dengan spesifikasi gambar kerja dan RAB, maka PIHAK KESATU berhak
 PIHAK | PIHAK II
 
 
+
 --- Page 7 ---
+2
+
 menunda pembayaran termin sampai ada kesepakatan dengan PIHAK
 
-2. Apabila PIHAK KESATU lalai atau terlambat membayar termin kepada
+Apabila PIHAK KESATU lalai atau terlambat membayar termin kepada
 PIHAK KEDUA atas pekerjaan yang telah dilaksanakan maka PIHAK
 KEDUA berhak menghentikan pekerjaan dengan sepengetahuan PIHAK
 KESATU sampai dengan batas waktu yang telah disepakati kedua belah
@@ -316,10 +328,11 @@ KESATU sampai dengan batas waktu yang telah disepakati kedua belah
 PASAL : 11
 FORCE MAJEUR
 
-1. Yang dimaksud keadaan Force Majeur adalah berbagai keadaan yang
+. Yang dimaksud keadaan Force Majeur adalah berbagai keadaan yang
+
 mengganggu kelancaran pelaksanaan proyek seperti:
 
-a. Bencana alam (gempa bumi, tanah longsor, angin topan, baniir,
+a. Bencana alam (gempa bumi, tanah longsor, angin topan, banijir,
 kebakaran, dll) yang bisa menyebabkan terganggunya jalannya
 proses konstruksi.
 
@@ -344,20 +357,23 @@ keberlanjutan proyek.
 
 PASAL : 12
 PENYELESAIAN PERSELISIHAN
-1. Jika terjadi perselisinan antara kedua belah pihak yang terkait dengan
+
+1. Jika terjadi perselisihan antara kedua belah pihak yang terkait dengan
+
 perjanjanjian ini, pada dasarnya kedua belah pihak memilih penyelesaian
 dengan cara musyawarah----------------------------------------------------------------
-2. Jika dengan musyawarah tidak dapat menyelesaikan perselisihan yang
+. Jika dengan musyawarah tidak dapat menyelesaikan perselisihan yang
 terjadi, maka kedua belah pihak memilih penyelesaian dalam bentuk
 “Panitia Pendamai” yang berfungsi sebagai juri, yang akan dibentuk dan
 diangkat oleh kedua belah pihak, yaitu terdiri:--------------------------------
 a. Seorang wakil dari PIHAK KESATU sebagai anggota--------------------
 b. Seorang wakil dari PIHAK KEDUA sebagai anggota--------------------
-3. Keputusan “Panitia Pendamai” tersebut bersifat mengikat kedua belah
+. Keputusan “Panitia Pendamai” tersebut bersifat mengikat kedua belah
 pihak, dan seluruh biaya penyelesaian perselisihan akan ditanggung
-DOISAM A, ----------------- =n nn nnn nnn nn nn nnn nnn nn nn nnn nnn nnn nn nnn nn nnn nnn nnn nnn
+DOISAM A, ----------------- 2-2 nnn nnn nnn nn nn nn nnn nn nn nnn nnn nnn nn nnn nnn nn nnn nnn nnn
 
 PIHAK | PIHAK II
+
 
 
 --- Page 8 ---

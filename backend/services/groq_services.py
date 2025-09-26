@@ -24,8 +24,8 @@ class GroqService:
         self.groq_available = GROQ_AVAILABLE
         if self.groq_available and hasattr(settings, 'GROQ_API_KEY') and settings.GROQ_API_KEY:
             self.client = Groq(api_key=settings.GROQ_API_KEY)
-            self.model = getattr(settings, 'GROQ_MODEL', 'llama-3.1-70b-versatile')
-            self.max_tokens = getattr(settings, 'GROQ_MAX_TOKENS', 1024)
+            self.model = getattr(settings, 'GROQ_MODEL', 'llama-3.1-8b-instant')
+            self.max_tokens = getattr(settings, 'GROQ_MAX_TOKENS', 2000)
             self.temperature = getattr(settings, 'GROQ_TEMPERATURE', 0.1)
             print(f"Groq service initialized with model: {self.model}")
         else:
@@ -55,14 +55,14 @@ class GroqService:
             }
             
         # Handle long texts with smart preprocessing
-        if len(text) > 10000:
-            print(f"Long text detected: {len(text)} characters. Using smart chunking...")
-            text = self._extract_relevant_contract_sections(text)
+        if len(text) > 15000:
+            print(f"Very long text detected: {len(text)} characters. Using smart chunking...")
+            text = self._extract_relevant_contract_sections(text, max_chars=12000)
             print(f"Relevant sections extracted: {len(text)} characters")
-        elif len(text) > 6000:
-            # For medium texts, take first and last parts which usually contain key info
-            middle_cut = len(text) // 2
-            text = text[:3000] + "\n\n[...bagian tengah dipotong...]\n\n" + text[middle_cut:]
+        elif len(text) > 8000:
+            # For medium-long texts, keep more content but focus on key sections
+            text = self._extract_relevant_contract_sections(text, max_chars=8000)
+            print(f"Medium text processed: {len(text)} characters")
         
         # Continue with analysis
         return await self._continue_analysis(text)
@@ -70,103 +70,185 @@ class GroqService:
     def _extract_relevant_contract_sections(self, text: str, max_chars: int = 6000) -> str:
         """
         Extract the most relevant sections for contract analysis from long text.
-        Looks for sections containing contract information like parties, dates, etc.
+        Enhanced version that preserves critical contract information.
         """
         # Keywords that indicate important contract sections (in Indonesian)
-        important_keywords = [
-            'kontrak', 'perjanjian', 'agreement', 'pihak pertama', 'pihak kedua',
-            'berakhir', 'berlaku', 'tanggal', 'mulai', 'sampai', 'jangka waktu',
-            'nama', 'judul', 'alamat', 'perusahaan', 'pt ', 'cv ', 'tuan', 'nyonya',
-            'nilai', 'harga', 'biaya', 'rupiah', 'rp', 'usd', '$'
+        critical_keywords = [
+            # Core contract terms
+            'kontrak', 'perjanjian', 'agreement', 'surat',
+            
+            # Parties (high priority)
+            'pihak pertama', 'pihak kedua', 'pihak ketiga', 'pihak kesatu',
+            'yang selanjutnya disebut', 'yang dalam', 'berkedudukan',
+            'alamat', 'direktur', 'manager', 'wakil', 'bertindak',
+            
+            # Company identifiers
+            'pt ', 'cv ', 'ud ', 'firma', 'persero', 'tbk', 'ltd',
+            
+            # Personal info
+            'nama', 'nik', 'nomor induk', 'identitas', 'ktp',
+            
+            # Financial terms (very high priority)
+            'nilai', 'harga', 'biaya', 'rupiah', 'rp', 'usd', '$',
+            'pembayaran', 'tagihan', 'invoice', 'pelunasan',
+            
+            # Time terms (very high priority)
+            'tanggal', 'waktu', 'periode', 'jangka', 'masa',
+            'berlaku', 'berakhir', 'expired', 'mulai', 'sampai',
+            
+            # Legal structure
+            'pasal', 'ayat', 'point', 'butir', 'bab',
+            'kewajiban', 'hak', 'tanggung jawab'
         ]
         
-        # Split text into paragraphs
-        paragraphs = text.split('\n\n')
-        scored_paragraphs = []
+        # Split into lines for more granular control
+        lines = text.split('\n')
+        scored_lines = []
         
-        for i, paragraph in enumerate(paragraphs):
-            if len(paragraph.strip()) < 20:  # Skip very short paragraphs
+        for i, line in enumerate(lines):
+            line_stripped = line.strip()
+            if not line_stripped or len(line_stripped) < 5:
                 continue
                 
-            # Score paragraph based on keyword density
+            line_lower = line_stripped.lower()
             score = 0
-            paragraph_lower = paragraph.lower()
             
-            for keyword in important_keywords:
-                score += paragraph_lower.count(keyword) * len(keyword)
+            # Score based on critical keywords
+            for keyword in critical_keywords:
+                if keyword in line_lower:
+                    if keyword in ['pihak pertama', 'pihak kedua', 'nama', 'nilai', 'tanggal', 'berakhir']:
+                        score += 25  # Super high priority for key contract info
+                    elif keyword in ['alamat', 'direktur', 'harga', 'berlaku', 'rupiah', 'rp']:
+                        score += 15  # High priority
+                    else:
+                        score += 8   # Medium priority
             
-            # Boost score for paragraphs at the beginning (usually contain key info)
-            if i < 10:
-                score *= 1.5
+            # Extra scoring for specific patterns
             
-            # Boost score for paragraphs with dates (common patterns)
+            # Lines with monetary values
             import re
+            money_patterns = [
+                r'rp\.?\s*\d+', r'rupiah\s*\d+', r'\$\s*\d+', 
+                r'\d+\s*rupiah', r'\d+\s*juta', r'\d+\s*milyar'
+            ]
+            for pattern in money_patterns:
+                if re.search(pattern, line_lower):
+                    score += 20
+            
+            # Lines with dates
             date_patterns = [
-                r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}',  # DD-MM-YYYY or DD/MM/YYYY
+                r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}',  # DD-MM-YYYY
                 r'\d{1,2}\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+\d{2,4}',
                 r'\d{4}[-/]\d{1,2}[-/]\d{1,2}'  # YYYY-MM-DD
             ]
-            
             for pattern in date_patterns:
-                if re.search(pattern, paragraph_lower):
-                    score *= 2
-                    break
+                if re.search(pattern, line_lower):
+                    score += 20
             
-            scored_paragraphs.append((score, paragraph))
+            # Lines with proper names (capitalize first letter)
+            words = line_stripped.split()
+            capitalized_words = [w for w in words if len(w) > 2 and w[0].isupper()]
+            if len(capitalized_words) >= 2:
+                score += 10
+            
+            # Lines with addresses
+            address_indicators = ['jalan', 'jl.', 'no.', 'nomor', 'kota', 'jakarta', 'surabaya', 'bandung', 'medan', 'semarang']
+            if any(indicator in line_lower for indicator in address_indicators):
+                score += 12
+            
+            # Boost early lines (headers, important info usually at top)
+            if i < 50:
+                score += 5
+            elif i < 100:
+                score += 2
+            
+            # Penalize very long lines (might be noise or OCR artifacts)
+            if len(line) > 300:
+                score -= 5
+            
+            scored_lines.append((score, i, line))
         
-        # Sort by score and take top paragraphs
-        scored_paragraphs.sort(key=lambda x: x[0], reverse=True)
+        # Sort by score descending
+        scored_lines.sort(key=lambda x: x[0], reverse=True)
         
-        selected_text = ""
-        for score, paragraph in scored_paragraphs:
-            if len(selected_text) + len(paragraph) > max_chars:
+        # Select lines until we reach character limit
+        selected_lines = []
+        total_chars = 0
+        
+        for score, line_idx, line in scored_lines:
+            if score > 0 and total_chars + len(line) < max_chars:
+                selected_lines.append((line_idx, line))
+                total_chars += len(line) + 1  # +1 for newline
+                
+            # Stop if we have enough high-scoring content
+            if total_chars > max_chars * 0.9:
                 break
-            selected_text += paragraph + "\n\n"
         
-        # If still too little content, add more from beginning
-        if len(selected_text) < 2000:
-            beginning = text[:3000]
-            selected_text = beginning + "\n\n" + selected_text
+        # Sort selected lines back to original order
+        selected_lines.sort(key=lambda x: x[0])
         
-        return selected_text[:max_chars]
+        # Reconstruct text
+        result_lines = []
+        last_idx = -1
+        
+        for line_idx, line in selected_lines:
+            # Add gap indicator if we skipped many lines
+            if line_idx > last_idx + 5:
+                result_lines.append("[...]")
+            result_lines.append(line)
+            last_idx = line_idx
+        
+        result_text = '\n'.join(result_lines)
+        
+        # Add summary note
+        if len(result_text) < len(text) * 0.4:
+            result_text = f"[Dokumen dipotong untuk fokus pada informasi kontrak penting]\n\n{result_text}"
+        
+        return result_text
         
     async def _continue_analysis(self, text: str) -> Dict[str, Any]:
         """Continue with the actual Groq analysis"""
         try:
             prompt = f"""
-            Analisis kontrak berikut dan ekstrak informasi spesifik ini dalam format JSON:
-            
-            {{
-                "contract_name": "nama kontrak atau judul dokumen",
-                "first_party": {{
-                    "name": "nama pihak pertama", 
-                    "type": "jenis (perusahaan/individu)",
-                    "address": "alamat jika ada"
-                }},
-                "second_party": {{
-                    "name": "nama pihak kedua",
-                    "type": "jenis (perusahaan/individu)", 
-                    "address": "alamat jika ada"
-                }},
-                "contract_end_date": "tanggal berakhir kontrak (format: DD-MM-YYYY atau format yang ditemukan)",
-                "contract_start_date": "tanggal mulai kontrak jika ada",
-                "contract_duration": "durasi kontrak",
-                "contract_value": "nilai kontrak jika disebutkan",
-                "contract_type": "jenis kontrak",
-                "key_terms": ["poin-poin penting dalam kontrak"]
-            }}
-            
-            Instruksi:
-            1. Fokus pada informasi yang diminta: nama kontrak, pihak pertama, pihak kedua, dan tanggal berakhir
-            2. Untuk pihak pertama dan kedua, cari nama perusahaan, organisasi, atau individu
-            3. Untuk tanggal berakhir, cari istilah seperti "berakhir pada", "berlaku sampai", "jangka waktu", "masa berlaku"
-            4. Jika informasi tidak ditemukan, berikan null
-            5. Berikan respons dalam bahasa Indonesia
-            6. Jika teks terpotong, analisis dengan informasi yang tersedia
-            
-            Teks kontrak (karakter: {len(text)}):
-            {text}
-            """
+TUGAS: Ekstrak informasi spesifik dari dokumen kontrak Indonesia ini.
+
+WAJIB DIPERHATIKAN:
+- NAMA SPESIFIK pihak-pihak (PT, CV, nama lengkap individu) - BUKAN "Pihak Pertama/Kedua"
+- ALAMAT LENGKAP jika tertulis
+- TANGGAL BERAKHIR yang eksplisit atau hitung dari mulai + durasi
+- NILAI KONTRAK dalam Rupiah jika disebutkan
+- TIDAK boleh menggunakan placeholder generik
+
+Format output JSON yang diinginkan:
+{{
+    "contract_name": "nama/judul kontrak yang spesifik",
+    "first_party": {{
+        "name": "NAMA SPESIFIK (PT ABC, CV XYZ, atau Tuan John Doe)", 
+        "type": "perusahaan/individu",
+        "address": "alamat lengkap jika disebutkan"
+    }},
+    "second_party": {{
+        "name": "NAMA SPESIFIK (bukan Pihak Kedua)",
+        "type": "perusahaan/individu", 
+        "address": "alamat lengkap jika disebutkan"
+    }},
+    "contract_end_date": "DD-MM-YYYY atau format yang tertulis",
+    "contract_start_date": "DD-MM-YYYY atau format yang tertulis",
+    "contract_duration": "durasi yang disebutkan",
+    "contract_value": "nilai dalam rupiah jika ada",
+    "contract_type": "jenis kontrak spesifik",
+    "key_terms": ["poin-poin penting faktual"]
+}}
+
+CONTOH YANG BENAR:
+- "PT Maju Jaya Tbk" ✓ (bukan "Pihak Pertama" ✗)
+- "CV Berkah Sentosa" ✓ (bukan "Pihak Kedua" ✗)  
+- "Rp 500.000.000,-" ✓ (bukan "tidak disebutkan" ✗)
+
+DOKUMEN KONTRAK:
+{text}
+
+OUTPUT HANYA JSON VALID:"""
             
             # Make API call
             response = await asyncio.get_event_loop().run_in_executor(
@@ -174,7 +256,7 @@ class GroqService:
                 lambda: self.client.chat.completions.create(
                     model=self.model,
                     messages=[
-                        {"role": "system", "content": "Anda adalah AI yang ahli dalam menganalisis kontrak Indonesia. Ekstrak informasi spesifik yang diminta dengan akurat dari teks kontrak."},
+                        {"role": "system", "content": "Anda adalah AI ahli analisis kontrak Indonesia. PRIORITAS UTAMA: ekstrak nama perusahaan/individu SPESIFIK yang tertulis dalam dokumen (PT, CV, nama lengkap), BUKAN istilah generik seperti 'Pihak Pertama/Kedua'. Cari juga nilai kontrak dan tanggal yang eksplisit. Response harus JSON valid tanpa teks tambahan."},
                         {"role": "user", "content": prompt}
                     ],
                     max_tokens=self.max_tokens,
