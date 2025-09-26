@@ -61,7 +61,7 @@ def compute_metrics(eval_pred):
 # 5. TrainingArguments & Trainer
 training_args = TrainingArguments(
     output_dir="models/indo_finetuned",
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",  # Ganti dari evaluation_strategy
     save_strategy="epoch",
     learning_rate=2e-5,
     per_device_train_batch_size=16,

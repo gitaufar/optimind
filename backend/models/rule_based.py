@@ -1,11 +1,3 @@
-# models/rule_based.py
-def rule_based_risk(text: str) -> str:
-    low_keywords = ["insurance", "asuransi", "audit"]
-    high_keywords = ["uncapped liability", "eksklusif", "sepihak"]
-
-    t = text.lower()
-    if any(k in t for k in high_keywords):
-        return "High"
-    elif any(k in t for k in low_keywords):
-        return "Low"
-    return "Medium"
+version https://git-lfs.github.com/spec/v1
+oid sha256:dd56705ebae7e4c6e5eb860d49ebb1667d6eca98fca6a7d37a5aa9a493172a17
+size 366
