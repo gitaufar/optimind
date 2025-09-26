@@ -59,10 +59,12 @@ def compute_metrics(eval_pred):
     return {"accuracy": acc["accuracy"], "f1_macro": f1["f1"]}
 
 # 5. TrainingArguments & Trainer
+# 5. TrainingArguments & Trainer
 training_args = TrainingArguments(
     output_dir="models/indo_finetuned",
-    eval_strategy="epoch",  # Ganti dari evaluation_strategy
-    save_strategy="epoch",
+    eval_strategy="epoch",        # evaluasi tiap epoch
+    save_strategy="epoch",              # simpan tiap epoch
+    save_total_limit=1,                 # hanya keep 1 model (best)
     learning_rate=2e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
@@ -71,6 +73,8 @@ training_args = TrainingArguments(
     load_best_model_at_end=True,
     metric_for_best_model="f1_macro",
     greater_is_better=True,
+    logging_dir="logs",                 # optional, buat tensorboard
+    logging_strategy="epoch"            # log tiap epoch
 )
 
 trainer = Trainer(
@@ -82,9 +86,7 @@ trainer = Trainer(
     tokenizer=tokenizer
 )
 
-# 6. Mulai training
 trainer.train()
 
-# 7. Simpan model akhir
-trainer.save_model("models/indo_bert")
+trainer.save_model("models/indo_bert", safe_serialization=True)
 tokenizer.save_pretrained("models/indo_bert")
