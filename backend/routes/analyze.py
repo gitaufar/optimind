@@ -14,60 +14,6 @@ async def health():
     """Simple health check endpoint"""
     return {"status": "healthy", "message": "Analyze service is running"}
 
-@router.post("/ocr/extract")
-async def extract_text_with_ocr(file: UploadFile):
-    """
-    Extract text using OCR and save result to .txt file
-    """
-    start_time = time.time()
-    
-    try:
-        # Initialize OCR service
-        ocr_service = OCRService()
-        
-        # Check file type
-        file_extension = file.filename.lower().split('.')[-1] if '.' in file.filename else ""
-        
-        extracted_text = ""
-        ocr_filepath = ""
-        
-        if file_extension == 'pdf':
-            # Extract from PDF using OCR
-            extracted_text, ocr_filepath = await ocr_service.extract_and_save_from_pdf(file)
-        elif file_extension in ['jpg', 'jpeg', 'png', 'tiff', 'bmp']:
-            # Extract from image using OCR
-            extracted_text, ocr_filepath = await ocr_service.extract_and_save_from_image(file)
-        else:
-            return {
-                "success": False,
-                "error": "Unsupported file type. Please upload PDF, JPG, PNG, TIFF, or BMP files.",
-                "processing_time": time.time() - start_time
-            }
-        
-        if not extracted_text:
-            return {
-                "success": False,
-                "error": "Failed to extract text from file",
-                "processing_time": time.time() - start_time
-            }
-        
-        return {
-            "success": True,
-            "filename": file.filename,
-            "file_type": file_extension,
-            "extracted_text": extracted_text[:1000] + "..." if len(extracted_text) > 1000 else extracted_text,
-            "extracted_text_length": len(extracted_text),
-            "ocr_file_path": ocr_filepath,
-            "processing_time": time.time() - start_time
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": f"OCR extraction failed: {str(e)}",
-            "processing_time": time.time() - start_time
-        }
-
 @router.post("/contract/details", response_model=ContractAnalysisResult)
 async def analyze_contract_details(file: UploadFile):
     """
