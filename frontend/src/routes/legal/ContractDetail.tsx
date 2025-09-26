@@ -6,7 +6,7 @@ import supabase from '@/utils/supabase'
 
 import CardDetailContract from '@/components/Legal/CardDetailContract'
 import RiskAnalysisCard from '@/components/Legal/RiskAnalysis'
-import AiRecommendation from '@/components/Legal/AiRecommendation' // Pastikan nama impor sesuai nama file
+import AiRecommendation from '@/components/Legal/AIRecommendation' // Pastikan nama impor sesuai nama file
 import LegalNotes from '@/components/Legal/LegalNotes'
 
 export default function ContractDetail() {
@@ -102,7 +102,7 @@ export default function ContractDetail() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <RiskAnalysisCard risks={analysisData} />
         {/* Menggunakan data yang sudah disiapkan dan props yang benar */}
-        <AiRecommendations 
+        <AIRecommendation 
           documentTitle={recommendationData.documentTitle} 
           recommendations={recommendationData.recommendations} 
         />
