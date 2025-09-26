@@ -27,7 +27,15 @@ import LegalAnalyzer from './routes/legal/Analyzer'
 import ContractDetail from './routes/legal/ContractDetail'
 
 // Management
-import Management from './routes/management/Index'
+import {
+  Layout as ManagementLayout,
+  KPIMonitoring,
+  RiskHeatmap,
+  LifecycleTimeline,
+  Reports,
+  Settings as ManagementSettings
+} from './routes/management'
+import ManagementContractDetail from './routes/management/ContractDetail'
 
 const router = createBrowserRouter([
   { path: '/', element: <Login /> },
@@ -68,9 +76,18 @@ const router = createBrowserRouter([
     path: '/management',
     element: (
       <ProtectedRoute allow={['management']}>
-        <Management />
+        <ManagementLayout />
       </ProtectedRoute>
     ),
+    children: [
+      { index: true, element: <KPIMonitoring /> },
+      { path: 'kpi', element: <KPIMonitoring /> },
+      { path: 'risk-heatmap', element: <RiskHeatmap /> },
+      { path: 'lifecycle', element: <LifecycleTimeline /> },
+      { path: 'reports', element: <Reports /> },
+      { path: 'contracts/:id', element: <ManagementContractDetail /> },
+      { path: 'settings', element: <ManagementSettings /> },
+    ],
   },
 ])
 

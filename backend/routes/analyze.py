@@ -37,6 +37,7 @@ async def analyze_contract_details(file: UploadFile):
         
         extracted_text = ""
         extraction_method = ""
+        ocr_filepath = ""  # Path to saved OCR result
         
         # Check file type and extract text accordingly
         file_extension = file.filename.lower().split('.')[-1] if '.' in file.filename else ""
@@ -52,20 +53,26 @@ async def analyze_contract_details(file: UploadFile):
                     print("PDF has little extractable text, using OCR...")
                     # Reset file position
                     await file.seek(0)
-                    extracted_text = await ocr_service.extract_text_from_pdf_file(file)
-                    extraction_method = "OCR (PDF to image)"
+                    extracted_text, ocr_filepath = await ocr_service.extract_and_save_from_pdf(file)
+                    extraction_method = "OCR (PDF to image) + saved to file"
+                else:
+                    # Even if PDF extraction is successful, also save OCR for backup
+                    print("PDF text extracted successfully, also saving OCR backup...")
+                    await file.seek(0)
+                    ocr_text, ocr_filepath = await ocr_service.extract_and_save_from_pdf(file)
+                    extraction_method = "PDF text extraction + OCR backup saved"
                     
             except Exception as pdf_error:
                 print(f"PDF extraction failed: {pdf_error}, trying OCR...")
                 # Reset file position and try OCR
                 await file.seek(0)
-                extracted_text = await ocr_service.extract_text_from_pdf_file(file)
-                extraction_method = "OCR (PDF to image)"
+                extracted_text, ocr_filepath = await ocr_service.extract_and_save_from_pdf(file)
+                extraction_method = "OCR (PDF to image) + saved to file"
                 
         elif file_extension in ['jpg', 'jpeg', 'png', 'tiff', 'bmp']:
-            # For image files, use OCR directly
-            extracted_text = await ocr_service.extract_text_from_image_file(file)
-            extraction_method = "OCR (image)"
+            # For image files, use OCR directly and save result
+            extracted_text, ocr_filepath = await ocr_service.extract_and_save_from_image(file)
+            extraction_method = "OCR (image) + saved to file"
             
         else:
             # For text files, read directly
@@ -144,6 +151,7 @@ async def analyze_contract_details(file: UploadFile):
             success=True,
             contract_details=contract_details,
             extracted_text=extracted_text[:1000] + "..." if len(extracted_text) > 1000 else extracted_text,
+            ocr_file_path=ocr_filepath if ocr_filepath else None,
             confidence_score=groq_result.get("confidence_score", 0.9),
             analysis_method="groq_ai",
             processing_time=time.time() - start_time

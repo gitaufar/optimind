@@ -3,6 +3,10 @@ import { useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import Card from '@/components/Card'
 import { useContracts } from '@/hooks/useContracts'
+import { AlertTriangle, AlertCircle, Info, Download } from 'lucide-react'
+import CardDashboard from '@/components/Legal/CardDashboard'
+import ButtonBlue from '@/components/ButtonBlue'
+import ContractListLegal from '@/components/Legal/ContractListLegal'
 
 export default function LegalRiskCenter() {
   const { items } = useContracts()
@@ -21,63 +25,83 @@ export default function LegalRiskCenter() {
       .sort((a, b) => Number(b.value_rp || 0) - Number(a.value_rp || 0))
   }, [items, fltRisk, fltStatus, sortBy])
 
+   const contractsMapped = useMemo(
+    () =>
+      (filtered ?? []).map((c: any) => ({
+        id: String(c.id),
+        name: c.name ?? c.title ?? 'Untitled',
+        party: [c.first_party, c.second_party].filter(Boolean).join(' - ') || '-',
+        risk: c.risk ?? c.risk_level ?? 'Low',
+        clause: c.clause ?? c.clause_text ?? c.issue ?? '-',
+        section: c.section ?? c.clause_number ?? '-',
+        status: c.status ?? c.review_status ?? 'Pending Review',
+      })),
+    [filtered]
+  )
+
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card title="High Risk Clauses">
-          <Big n={highCount} trend="+12%" />
-        </Card>
-        <Card title="Medium Risk Clauses">
-          <Big n={medCount} trend="-5%" />
-        </Card>
-        <Card title="Low Risk Clauses">
-          <Big n={lowCount} trend="+2%" />
-        </Card>
+      <div className="flex flex-row items-center justify-between mb-4">
+      {/* Bagian Kiri: Judul dan Subjudul */}
+      <div>
+        <div className="text-3xl font-bold">
+          Risk Center
+        </div>
+        <div className='text-sm text-gray-600'>
+          Monitor and manage contract clauses with potential risks
+        </div>
       </div>
 
-      <Card
-        title="Filters"
-        right={
-          <button className="rounded-xl border px-3 py-1" onClick={() => exportReport()}>
-            Export Report
-          </button>
-        }
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <Select
-            label="Risk Level"
-            value={fltRisk}
-            onChange={(e) => setFltRisk(e.target.value as typeof fltRisk)}
-            options={['All', 'Low', 'Medium', 'High']}
-          />
-          <Select
-            label="Status"
-            value={fltStatus}
-            onChange={(e) => setFltStatus(e.target.value as typeof fltStatus)}
-            options={['All', 'Pending Review', 'Reviewed', 'Revision Requested']}
-          />
-          <Select label="Sort" value={sortBy} onChange={() => {}} options={['Sort by Contract Value']} />
-        </div>
+      {/* Bagian Kanan: Tombol Export */}
+      <div>
+        <ButtonBlue
+          text="Export Report"
+          onClick={() => exportReport()}
+          iconRight={<Download size={16} />} // 2. Tambahkan ikon di sini
+        />
+      </div>
+    </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <CardDashboard
+          title="High Risk Clauses"
+          value={highCount}
+          right={<AlertTriangle className="h-5 w-5 text-red-600" />}
+        />
+        <CardDashboard
+          title="Medium Risk Clauses"
+          value={medCount}
+          right={<AlertCircle className="h-5 w-5 text-amber-600" />}
+        />
+        <CardDashboard
+          title="Low Risk Clauses"
+          value={lowCount}
+          right={<Info className="h-5 w-5 text-blue-600" />}
+        />
+      </div>
+
+      <Card>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              label="Risk Level:"
+              value={fltRisk}
+              onChange={(e) => setFltRisk(e.target.value as typeof fltRisk)}
+              options={['All', 'Low', 'Medium', 'High']}
+            />
+            <Select
+              label="Status:"
+              value={fltStatus}
+              onChange={(e) => setFltStatus(e.target.value as typeof fltStatus)}
+              options={['All', 'Pending Review', 'Reviewed', 'Revision Requested']}
+            />
+            <Select label="Sort:" value={sortBy} onChange={() => {}} options={['Sort by Contract Value']} />
+          </div>
       </Card>
 
-      <Card title="Contracts">
-        <div className="grid gap-3">
-          {filtered.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-xl border p-3">
-              <div>
-                <div className="font-medium">{c.name}</div>
-                <div className="text-sm text-gray-600">
-                  {c.second_party ?? '-'} - Rp {Number(c.value_rp || 0).toLocaleString('id-ID')}
-                </div>
-              </div>
-              <div className="text-sm">{c.risk ?? '-'}</div>
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <div className="text-sm text-gray-600">Tidak ada kontrak yang cocok dengan filter.</div>
-          )}
-        </div>
-      </Card>
+      <ContractListLegal
+        variant="riskCenter"
+        contracts={contractsMapped}
+      />
     </div>
   )
 }
