@@ -1,86 +1,123 @@
 "use client"
-import { useState } from 'react'
-import { useAnalyzer, useContracts } from '@/hooks/useContracts'
-import { UploadCloud, Trash2, Save, Search, Download, ZoomIn, ZoomOut, FileText } from 'lucide-react'
-import ButtonBlue from '@/components/ButtonBlue' // Asumsi Anda punya komponen ini
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useAnalyzer } from '@/hooks/useContracts'
+import supabase from '@/utils/supabase'
 
-// Impor komponen baru
-import RiskRadarCard from '@/components/Legal/RiskRadar'
-import ContractEntitiesCard from '@/components/Legal/ContractEntitiesCard'
+import CardDetailContract from '@/components/Legal/CardDetailContract'
+import RiskAnalysisCard from '@/components/Legal/RiskAnalysis'
+// Ganti impor AiRecommendation dengan InteractiveDocumentViewer
+import InteractiveDocumentViewer from '@/components/Legal/InteractiveDocumentViewer' 
+import LegalNotes from '@/components/Legal/LegalNotes'
 
-export default function LegalAnalyzer() {
-  const { items, setRisk } = useContracts()
-  const [selected, setSelected] = useState<string | null>(items[0]?.id ?? null)
-  const { entities, findings, runAnalysis, loading } = useAnalyzer(selected ?? undefined)
+export default function ContractDetail() {
+  const { id } = useParams<{ id: string }>()
+  const { findings = [] } = useAnalyzer(id ?? undefined) || { findings: [] }
+
+  const [meta, setMeta] = useState<any>(null)
+  const [notes, setNotes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // ... (useEffect untuk mengambil meta dan notes tidak berubah) ...
+  useEffect(() => {
+    if (!id) return
+    ;(async () => {
+      setLoading(true)
+      const { data, error } = await supabase.from('contracts').select('*').eq('id', id).single()
+      if (!error) setMeta(data)
+      setLoading(false)
+    })()
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    ;(async () => {
+      const { data, error } = await supabase.from('contract_notes').select('*').eq('contract_id', id).order('created_at', { ascending: false })
+      if (!error) setNotes(data ?? [])
+    })()
+  }, [id])
+
+  const addNote = async (contractId: string, note: string) => {
+    const { data, error } = await supabase.from('contract_notes').insert({ contract_id: contractId, note }).select('*').single()
+    if (!error && data) setNotes((prev) => [data, ...prev])
+  }
+
+
+  // ==================================================================
+  // PERSIAPAN DATA BARU UNTUK KOMPONEN INTERAKTIF
+  // ==================================================================
+
+  const contractDetails = {
+    // ... (data untuk CardDetailContract tidak berubah)
+    firstParty: meta?.first_party ?? '-',
+    secondParty: meta?.second_party ?? '-',
+    contractValue: `Rp ${Number(meta?.value_rp ?? meta?.value ?? 0).toLocaleString('id-ID')}`,
+    status: meta?.status || 'On Review',
+    duration: meta?.duration_months != null ? `${meta.duration_months} Bulan` : '-',
+    startDate: meta?.start_date ? new Date(meta.start_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-',
+    penalty: findings.find((f: any) => String(f.section ?? '').toLowerCase().includes('penalty'))?.description?.split(': ')?.[1] ?? '-',
+    riskLevel: (findings.some((f: any) => f.level === 'High') ? 'High Risk' : findings.some((f: any) => f.level === 'Medium') ? 'Medium Risk' : 'Low Risk') as any,
+  }
+
+  const analysisData = (findings ?? []).map((f: any) => ({
+    title: f.section ?? 'Clause',
+    riskLevel: f.level ?? 'Low',
+    description: f.description ?? 'No description available.',
+    documentLink: `#${f.section ?? ''}`,
+  }))
+  
+  // 1. Siapkan data 'sections' untuk menampilkan dokumen asli
+  const documentSections = (findings ?? []).map((f: any) => ({
+    title: `Pasal ${f.pasal_no ?? '?'} - ${f.section ?? f.title}`,
+    content: f.original_text || 'Teks asli klausul tidak tersedia.', // <- Gunakan data asli
+    highlight: (f.level?.toLowerCase() as 'high' | 'medium' | 'low') || undefined,
+  }));
+
+  // 2. Siapkan data 'suggestions' untuk modal pop-up
+  const aiSuggestions = (findings ?? []).map((f: any) => ({
+    title: `Pasal ${f.pasal_no ?? '?'} - ${f.section ?? f.title}`,
+    originalContent: f.original_text || 'Teks asli klausul tidak tersedia.', // <- Gunakan data asli
+    suggestedContent: f.recommendation_text || 'Saran perbaikan dari AI tidak tersedia.', // <- Gunakan data rekomendasi
+    riskLevel: (f.level?.toLowerCase() as 'high' | 'medium' | 'low') || 'low',
+  }));
+
+  const formattedNotes = (notes ?? []).map((n: any) => ({ /* ... (tidak berubah) ... */ 
+    id: n.id,
+    author: n.author || 'Unknown',
+    timestamp: n.created_at ? new Date(n.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '',
+    content: n.note,
+  }))
+
+  const handleSaveNote = (newNoteContent: string) => {
+    if (id) addNote(id, newNoteContent)
+  }
+
+  if (loading || !meta) {
+    return <div className="p-6">Loading contract details...</div>
+  }
 
   return (
-    <div className="space-y-6 bg-gray-50 p-6">
-      {/* Header Halaman */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">AI Contract Analyzer</h1>
-        <p className="text-sm text-gray-600">Analyze contracts automatically with AI-powered risk assessment</p>
-      </div>
+    <div className="space-y-6">
+      <CardDetailContract contract={contractDetails} />
 
-      {/* Input Section */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Upload Box */}
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-white p-8 text-center">
-          <UploadCloud className="mb-2 h-10 w-10 text-gray-400" />
-          <p className="font-semibold text-gray-700">Drag & Drop Contract File</p>
-          <p className="text-xs text-gray-500">Upload PDF or DOCX files up to 10MB</p>
-          <ButtonBlue text="Browse Files" className="mt-4" />
-        </div>
-        
-        {/* Select from Inbox */}
-        <div className="rounded-xl border border-gray-200 bg-white p-8">
-          <p className="font-semibold text-gray-700">Or Select from Inbox</p>
-          <select 
-            value={selected || ''} 
-            onChange={(e) => setSelected(e.target.value)}
-            className="mt-2 w-full rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            {items.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} - {c.second_party ?? '-'}</option>
-            ))}
-          </select>
-          <ButtonBlue 
-            text={loading ? 'Analyzing...' : 'Run Analysis'} 
-            onClick={() => selected && runAnalysis(selected)}
-            disabled={!selected || loading}
-            className="mt-4 w-full" 
-          />
-        </div>
-      </div>
-
-      {/* Document Preview */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b p-4">
-          <h3 className="font-semibold text-gray-800">Contract Document Preview</h3>
-          <div className="flex items-center gap-4 text-gray-500">
-            <button className="hover:text-gray-800"><ZoomOut size={18} /></button>
-            <button className="hover:text-gray-800"><ZoomIn size={18} /></button>
-            <button className="hover:text-gray-800"><Download size={18} /></button>
-          </div>
-        </div>
-        <div className="flex min-h-[300px] flex-col items-center justify-center p-6 text-center">
-          <FileText className="h-12 w-12 text-gray-300" />
-          <p className="mt-2 font-semibold text-gray-500">Contract document will appear here</p>
-          <p className="text-sm text-gray-400">Risk clauses will be automatically highlighted</p>
-        </div>
-      </div>
-      
-      {/* Results Section */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ContractEntitiesCard entities={entities} />
-        <RiskRadarCard findings={findings} />
+        <RiskAnalysisCard risks={analysisData} />
+        
+        {/* Gunakan komponen interaktif dengan data yang sudah disiapkan */}
+        <InteractiveDocumentViewer
+          documentTitle={meta?.name ?? 'Contract Document'}
+          sections={documentSections}
+          suggestions={aiSuggestions}
+        />
       </div>
 
-      {/* Footer Actions */}
+      <LegalNotes notes={formattedNotes} onSaveNote={handleSaveNote} />
+
       <div className="flex items-center justify-end gap-3">
-        <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-          <Trash2 size={16} /> Discard
-        </button>
-        <ButtonBlue text="Save to Inbox" iconRight={<Save size={16}/>} />
+        {/* ... (tombol aksi tidak berubah) ... */}
+        <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50">Save Draft Notes</button>
+        <button className="rounded-lg bg-orange-500 px-4 py-2 font-semibold text-white hover:bg-orange-600">Request Revision</button>
+        <button className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">Approve Contract</button>
       </div>
     </div>
   )
