@@ -346,6 +346,6 @@ function formatStatus(status: Status): string {
     case 'Expired':
       return 'Expired'
     default:
-      return status.replace(/_/g, ' ')
+      return String(status).replace(/_/g, ' ')
   }
 }
