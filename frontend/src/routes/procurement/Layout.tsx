@@ -46,8 +46,7 @@ export default function ProcurementLayout() {
               OM
             </div>
             <div className="hidden group-hover:block">
-              <div className="text-sm font-semibold text-slate-800">OptiMind</div>
-              <div className="text-xs text-slate-500">Contract Suite</div>
+              <div className="text-sm font-semibold text-slate-800">OptiMind | ILCS</div>
             </div>
           </div>
           <nav className="flex-1 space-y-1 px-2 pb-6">
@@ -137,3 +136,6 @@ export default function ProcurementLayout() {
     </div>
   )
 }
+
+
+
