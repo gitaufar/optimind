@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from routes import analyze
+from routes import analyze, risk
 import sys
 import os
 
@@ -18,8 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers with prefix
-app.include_router(analyze.router, prefix="/api")
+# Include routers
+app.include_router(analyze.router)
+app.include_router(risk.router)
 
 @app.get("/")
 async def root():
