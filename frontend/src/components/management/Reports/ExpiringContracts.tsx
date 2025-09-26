@@ -1,11 +1,17 @@
-interface ExpiringContractsProps {}
+interface ExpiringContractsProps {
+  kpiData?: {
+    expiring_30_days: number
+    expiring_60_days: number
+    expiring_90_days: number
+  } | null
+}
 
-export default function ExpiringContracts({}: ExpiringContractsProps) {
-  // Mock data berdasarkan screenshot
+export default function ExpiringContracts({ kpiData }: ExpiringContractsProps) {
+  // Generate data from KPI
   const data = [
-    { period: "30 Days", count: 16 },
-    { period: "60 Days", count: 28 },
-    { period: "90 Days", count: 42 },
+    { period: "30 Days", count: kpiData?.expiring_30_days || 0 },
+    { period: "60 Days", count: kpiData?.expiring_60_days || 0 },
+    { period: "90 Days", count: kpiData?.expiring_90_days || 0 },
   ];
 
   // Chart dimensions - lebih besar untuk sesuai screenshot
@@ -16,7 +22,7 @@ export default function ExpiringContracts({}: ExpiringContractsProps) {
   const innerHeight = chartHeight - margin.top - margin.bottom;
 
   // Scales
-  const maxValue = 50;
+  const maxValue = Math.max(...data.map(d => d.count), 50); // Dynamic max value with minimum 50
   const yScale = (value: number) => innerHeight - (value / maxValue) * innerHeight;
   const xScale = (index: number) => (index / (data.length - 1)) * innerWidth;
 
@@ -32,7 +38,7 @@ export default function ExpiringContracts({}: ExpiringContractsProps) {
       <svg width={chartWidth} height={chartHeight} className="mx-auto">
         <g transform={`translate(${margin.left}, ${margin.top})`}>
           {/* Grid lines horizontal */}
-          {[0, 10, 20, 30, 40, 50].map((value) => (
+          {Array.from({length: 6}, (_, i) => Math.round((maxValue / 5) * i)).map((value) => (
             <g key={value}>
               <line
                 x1={0}

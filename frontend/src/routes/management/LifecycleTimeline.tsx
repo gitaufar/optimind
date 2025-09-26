@@ -1,24 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import LifecycleKPICard from '../../components/management/LifecycleTimeline/LifecycleKPICard'
 import ContractLifecycleTimeline from '../../components/management/LifecycleTimeline/ContractLifecycleTimeline'
 import ContractsExpiring from '../../components/management/LifecycleTimeline/ContractsExpiring'
-
-interface Contract {
-  id: string
-  name: string
-  value: string
-  vendor: string
-  timeline: {
-    start: string
-    end: string
-    duration: number // in months
-    currentMonth: number
-  }
-  status: 'active' | 'expiring-soon' | 'critical' | 'expired'
-  riskLevel: 'High Risk' | 'Medium Risk' | 'Low Risk'
-  daysToExpiry?: number
-}
+import { managementService, type ManagementKPIData, type ContractSummary } from '../../services/managementService'
 
 interface ContractExpiringCard {
   title: string
@@ -33,6 +18,30 @@ export default function LifecycleTimeline() {
   const [selectedDivision, setSelectedDivision] = useState('All Divisions')
   const [selectedPeriod, setSelectedPeriod] = useState('Next 90 Days')
   const [isHighRiskOnly, setIsHighRiskOnly] = useState(false)
+  const [kpiData, setKpiData] = useState<ManagementKPIData | null>(null)
+  const [contracts, setContracts] = useState<ContractSummary[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [kpiResult, contractsResult] = await Promise.all([
+          managementService.getManagementKPI(),
+          managementService.getContractsSummary(30) // Get contracts for lifecycle analysis
+        ])
+        
+        setKpiData(kpiResult)
+        setContracts(contractsResult)
+      } catch (error) {
+        console.error('Error fetching lifecycle data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const handleViewContract = (contractId?: string) => {
     if (contractId) {
@@ -44,86 +53,71 @@ export default function LifecycleTimeline() {
     navigate('/management/reports')
   }
 
-  // KPI Data
-  const kpiData = {
-    activeContracts: 247,
-    expiring30Days: 12,
-    expiring60Days: 28,
-    expired: 8
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-gray-500">Loading lifecycle timeline...</div>
+      </div>
+    )
   }
 
-  // Timeline Data
-  const timelineContracts: Contract[] = [
-    {
-      id: '1',
-      name: 'Cloud Infrastructure',
-      value: '$2.5M',
-      vendor: 'Tech Corp',
-      timeline: { start: 'Jan', end: 'Dec', duration: 12, currentMonth: 9 },
-      status: 'active',
-      riskLevel: 'Low Risk'
-    },
-    {
-      id: '2', 
-      name: 'Security Services',
-      value: '$800K',
-      vendor: 'SecureTech',
-      timeline: { start: 'Mar', end: 'Aug', duration: 6, currentMonth: 5 },
-      status: 'expiring-soon',
-      riskLevel: 'Medium Risk'
-    },
-    {
-      id: '3',
-      name: 'Office Supplies',
-      value: '$150K', 
-      vendor: 'Supply Co',
-      timeline: { start: 'Jun', end: 'Sep', duration: 4, currentMonth: 3 },
-      status: 'critical',
-      riskLevel: 'High Risk'
-    },
-    {
-      id: '4',
-      name: 'Software Licenses',
-      value: '$1.2M',
-      vendor: 'SoftCorp',
-      timeline: { start: 'Jan', end: 'Dec', duration: 12, currentMonth: 9 },
-      status: 'active',
-      riskLevel: 'Low Risk'
-    },
-    {
-      id: '5',
-      name: 'Maintenance Contract',
-      value: '$500K',
-      vendor: 'MaintCorp',
-      timeline: { start: 'Apr', end: 'Sep', duration: 6, currentMonth: 5 },
-      status: 'expiring-soon',
-      riskLevel: 'Medium Risk'
-    }
-  ]
+  if (!kpiData) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-red-500">Error loading lifecycle data</div>
+      </div>
+    )
+  }
 
-  const expiringContracts: ContractExpiringCard[] = [
-    {
-      title: 'Office Supplies Contract',
-      value: '$150,000',
-      vendor: 'ABC Supplies Ltd',
-      daysToExpiry: 15,
-      riskLevel: 'High Risk'
-    },
-    {
-      title: 'Security Services',
-      value: '$800,000',
-      vendor: 'SecureTech Solutions',
-      daysToExpiry: 45,
-      riskLevel: 'Medium Risk'
-    },
-    {
-      title: 'Maintenance Contract',
-      value: '$500,000', 
-      vendor: 'TechMaint Corp',
-      daysToExpiry: 92,
-      riskLevel: 'Low Risk'
+  // Transform contracts data for timeline and expiring cards
+  const timelineContracts = contracts.slice(0, 10).map(contract => {
+    const createdDate = new Date(contract.created_at)
+    const endDate = new Date(contract.end_date)
+    const currentDate = new Date()
+    
+    // Assume contract started 12 months before end date or from created date
+    const assumedStartDate = new Date(endDate)
+    assumedStartDate.setMonth(endDate.getMonth() - 12)
+    const startDate = createdDate < assumedStartDate ? createdDate : assumedStartDate
+    
+    const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)) // months
+    const currentMonth = Math.ceil((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+    
+    const daysToExpiry = Math.floor((endDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))
+    let status: "active" | "expiring-soon" | "critical" | "expired" = "active"
+    
+    if (daysToExpiry < 0) {
+      status = "expired"
+    } else if (daysToExpiry <= 15) {
+      status = "critical"
+    } else if (daysToExpiry <= 60) {
+      status = "expiring-soon"
     }
-  ]
+
+    return {
+      id: contract.id,
+      name: contract.name,
+      value: `Rp ${contract.value_rp.toLocaleString()}`,
+      timeline: {
+        start: startDate.toLocaleDateString('en', { month: 'short' }),
+        end: endDate.toLocaleDateString('en', { month: 'short' }),
+        duration: Math.max(1, duration),
+        currentMonth: Math.max(1, Math.min(currentMonth, duration))
+      },
+      status
+    }
+  })
+
+  const expiringContracts: ContractExpiringCard[] = contracts.slice(0, 5).map(contract => {
+    const daysToExpiry = Math.floor((new Date(contract.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    return {
+      title: contract.name,
+      value: `Rp ${contract.value_rp.toLocaleString()}`,
+      vendor: contract.second_party,
+      daysToExpiry: Math.max(0, daysToExpiry),
+      riskLevel: contract.risk === 'high' ? 'High Risk' : contract.risk === 'medium' ? 'Medium Risk' : 'Low Risk'
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -131,22 +125,22 @@ export default function LifecycleTimeline() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <LifecycleKPICard
           title="Active Contracts"
-          value={kpiData.activeContracts}
+          value={kpiData.active_contracts}
           variant="active"
         />
         <LifecycleKPICard
           title="Expiring ≤30 Days"
-          value={kpiData.expiring30Days}
+          value={kpiData.expiring_30_days}
           variant="expiring-30"
         />
         <LifecycleKPICard
           title="Expiring ≤60 Days"
-          value={kpiData.expiring60Days}
+          value={kpiData.expiring_60_days}
           variant="expiring-60"
         />
         <LifecycleKPICard
           title="Expired"
-          value={kpiData.expired}
+          value={kpiData.expired_contracts}
           variant="expired"
         />
       </div>

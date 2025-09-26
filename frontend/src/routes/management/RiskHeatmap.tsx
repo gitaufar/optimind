@@ -1,75 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RiskDistribution from "../../components/management/RiskDistribution";
 import { RiskSummary } from "../../components/management/RiskHeatmap/RiskSummary";
-
-interface Contract {
-  id: string;
-  name: string;
-  value: string;
-  counterparty: string;
-  status: "Pending Review" | "Overdue" | "Active" | "Under Review";
-  deadline: string;
-  riskLevel: "High" | "Medium" | "Low";
-}
+import { managementService, type ManagementKPIData, type ContractSummary } from "../../services/managementService";
 
 export default function RiskHeatmap() {
   const navigate = useNavigate();
   const [selectedDivision, setSelectedDivision] = useState("All Divisions");
   const [selectedYear, setSelectedYear] = useState("2024");
   const [searchContract, setSearchContract] = useState("");
+  const [kpiData, setKpiData] = useState<ManagementKPIData | null>(null);
+  const [contracts, setContracts] = useState<ContractSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [kpiResult, contractsResult] = await Promise.all([
+          managementService.getManagementKPI(),
+          managementService.getContractsSummary(50) // Get more contracts for risk analysis
+        ]);
+        
+        setKpiData(kpiResult);
+        setContracts(contractsResult);
+      } catch (error) {
+        console.error('Error fetching risk heatmap data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setSearchContract(query);
+    if (query.trim()) {
+      try {
+        const results = await managementService.searchContracts(query);
+        setContracts(results);
+      } catch (error) {
+        console.error('Error searching contracts:', error);
+      }
+    } else {
+      // If search is cleared, reload all contracts
+      try {
+        const contractsResult = await managementService.getContractsSummary(50);
+        setContracts(contractsResult);
+      } catch (error) {
+        console.error('Error reloading contracts:', error);
+      }
+    }
+  };
 
   const handleViewContract = (contractId: string) => {
     navigate(`/management/contracts/${contractId}`);
   };
 
-  const contracts: Contract[] = [
-    {
-      id: "1",
-      name: "Terminal Operations Agreement",
-      value: "$2.5M",
-      counterparty: "Maritime Corp",
-      status: "Pending Review",
-      deadline: "Dec 15, 2024",
-      riskLevel: "High",
-    },
-    {
-      id: "2",
-      name: "Logistics Service Contract",
-      value: "$1.8M",
-      counterparty: "Global Logistics",
-      status: "Overdue",
-      deadline: "Nov 30, 2024",
-      riskLevel: "High",
-    },
-    {
-      id: "3",
-      name: "Equipment Maintenance",
-      value: "$950K",
-      counterparty: "TechServ Ltd",
-      status: "Active",
-      deadline: "Jan 20, 2025",
-      riskLevel: "High",
-    },
-    {
-      id: "4",
-      name: "Security Services Agreement",
-      value: "$720K",
-      counterparty: "SecureGuard",
-      status: "Under Review",
-      deadline: "Feb 10, 2025",
-      riskLevel: "High",
-    },
-    {
-      id: "5",
-      name: "IT Infrastructure Contract",
-      value: "$1.3M",
-      counterparty: "DataTech Solutions",
-      status: "Active",
-      deadline: "Mar 15, 2025",
-      riskLevel: "High",
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-gray-500">Loading risk heatmap data...</div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -97,13 +92,6 @@ export default function RiskHeatmap() {
       default:
         return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const riskSummaryData = {
-    high: { count: 12, percentage: 15.8 },
-    medium: { count: 28, percentage: 36.8 },
-    low: { count: 36, percentage: 47.4 },
-    total: 76,
   };
 
   return (
@@ -157,7 +145,7 @@ export default function RiskHeatmap() {
               type="text"
               placeholder="Contract name..."
               value={searchContract}
-              onChange={(e) => setSearchContract(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
           </div>
@@ -187,15 +175,15 @@ export default function RiskHeatmap() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Contract Risk Distribution */}
         <div className="lg:col-span-2">
-          <RiskDistribution />
+          <RiskDistribution kpiData={kpiData} />
         </div>
 
         {/* Risk Summary */}
         <RiskSummary
-          total={riskSummaryData.total}
-          highRisk={riskSummaryData.high.count}
-          mediumRisk={riskSummaryData.medium.count}
-          lowRisk={riskSummaryData.low.count}
+          total={kpiData?.total_contracts || 0}
+          highRisk={kpiData?.high_risk_count || 0}
+          mediumRisk={kpiData?.medium_risk_count || 0}
+          lowRisk={kpiData?.low_risk_count || 0}
         />
       </div>
 
@@ -241,10 +229,10 @@ export default function RiskHeatmap() {
                     {contract.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {contract.value}
+                    Rp {contract.value_rp.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {contract.counterparty}
+                    {contract.second_party}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -256,15 +244,15 @@ export default function RiskHeatmap() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {contract.deadline}
+                    {new Date(contract.end_date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(
-                        contract.riskLevel
+                        contract.risk
                       )}`}
                     >
-                      {contract.riskLevel}
+                      {contract.risk}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

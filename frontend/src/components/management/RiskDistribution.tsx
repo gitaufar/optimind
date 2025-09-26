@@ -2,6 +2,11 @@ import React from 'react'
 
 interface RiskDistributionProps {
   className?: string
+  kpiData?: {
+    low_risk_percentage: number
+    medium_risk_percentage: number
+    high_risk_percentage: number
+  } | null
 }
 
 interface RiskData {
@@ -10,11 +15,23 @@ interface RiskData {
   color: string
 }
 
-const RiskDistribution: React.FC<RiskDistributionProps> = ({ className = '' }) => {
+const RiskDistribution: React.FC<RiskDistributionProps> = ({ className = '', kpiData }) => {
   const riskData: RiskData[] = [
-    { label: 'Low Risk: 45.0%', percentage: 45.0, color: '#10B981' },
-    { label: 'Medium Risk: 35.0%', percentage: 35.0, color: '#F59E0B' },
-    { label: 'High Risk: 20.0%', percentage: 20.0, color: '#EF4444' }
+    { 
+      label: `Low Risk: ${kpiData?.low_risk_percentage?.toFixed(1) || '0.0'}%`, 
+      percentage: kpiData?.low_risk_percentage || 0, 
+      color: '#10B981' 
+    },
+    { 
+      label: `Medium Risk: ${kpiData?.medium_risk_percentage?.toFixed(1) || '0.0'}%`, 
+      percentage: kpiData?.medium_risk_percentage || 0, 
+      color: '#F59E0B' 
+    },
+    { 
+      label: `High Risk: ${kpiData?.high_risk_percentage?.toFixed(1) || '0.0'}%`, 
+      percentage: kpiData?.high_risk_percentage || 0, 
+      color: '#EF4444' 
+    }
   ]
 
   // Calculate angles for pie chart

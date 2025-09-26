@@ -5,20 +5,24 @@ interface ContractStatusData {
 }
 
 interface ContractStatusProps {
-  data?: ContractStatusData[]
+  kpiData?: {
+    active_contracts: number
+    pending_contracts: number
+    expired_contracts: number
+    total_contracts: number
+  } | null
 }
 
-export default function ContractStatus({ data }: ContractStatusProps) {
-  // Default data berdasarkan screenshot
-  const defaultData: ContractStatusData[] = [
-    { label: 'Active', value: 142, color: '#3B82F6' },
-    { label: 'Pending', value: 23, color: '#3B82F6' },
-    { label: 'Revision', value: 8, color: '#3B82F6' },
-    { label: 'Approved', value: 68, color: '#3B82F6' }
+export default function ContractStatus({ kpiData }: ContractStatusProps) {
+  // Generate data from KPI
+  const chartData: ContractStatusData[] = [
+    { label: 'Active', value: kpiData?.active_contracts || 0, color: '#10B981' },
+    { label: 'Pending', value: kpiData?.pending_contracts || 0, color: '#F59E0B' },
+    { label: 'Expired', value: kpiData?.expired_contracts || 0, color: '#EF4444' },
+    { label: 'Total', value: kpiData?.total_contracts || 0, color: '#3B82F6' }
   ]
 
-  const chartData = data || defaultData
-  const maxValue = Math.max(...chartData.map(item => item.value))
+  const maxValue = Math.max(...chartData.map((item: ContractStatusData) => item.value))
   const yAxisMax = Math.ceil(maxValue / 50) * 50 // Round up to nearest 50
 
   // Generate Y-axis labels

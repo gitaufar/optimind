@@ -1,73 +1,83 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import RiskDistribution from "../../components/management/RiskDistribution";
 import ReportsKPICard from "../../components/management/Reports/ReportsKPICard";
 import ContractStatus from "../../components/management/Reports/ContractStatus";
 import ExpiringContracts from "../../components/management/Reports/ExpiringContracts";
+import { managementService, type ManagementKPIData, type ContractSummary } from "../../services/managementService";
 
 // Interface definitions
-interface ContractSummaryData {
-  id: string;
-  name: string;
-  value: number;
-  status: "active" | "pending" | "expired";
-  expiryDate: string;
-  risk: "low" | "medium" | "high";
-}
 
 
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [reportPeriod, setReportPeriod] = useState("Monthly");
   const [department, setDepartment] = useState("All Departments");
   const [includeRiskDetails, setIncludeRiskDetails] = useState(false);
+  const [kpiData, setKpiData] = useState<ManagementKPIData | null>(null);
+  const [contractsSummary, setContractsSummary] = useState<ContractSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [kpiResult, contractsResult] = await Promise.all([
+          managementService.getManagementKPI(),
+          managementService.getContractsSummary(20)
+        ]);
+        
+        setKpiData(kpiResult);
+        setContractsSummary(contractsResult);
+      } catch (error) {
+        console.error('Error fetching reports data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setSearchTerm(query);
+    if (query.trim()) {
+      try {
+        const results = await managementService.searchContracts(query);
+        setContractsSummary(results);
+      } catch (error) {
+        console.error('Error searching contracts:', error);
+      }
+    } else {
+      // If search is cleared, reload all contracts
+      try {
+        const contracts = await managementService.getContractsSummary(20);
+        setContractsSummary(contracts);
+      } catch (error) {
+        console.error('Error reloading contracts:', error);
+      }
+    }
+  };
+
+  const handleViewContract = (contractId: string) => {
+    navigate(`/management/contracts/${contractId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-gray-500">Loading reports data...</div>
+      </div>
+    );
+  }
 
 
 
 
 
-  // Mock data untuk contracts summary table
-  const contractsSummary: ContractSummaryData[] = [
-    {
-      id: "1",
-      name: "Software License Agreement",
-      value: 125000,
-      status: "active",
-      expiryDate: "2024-06-15",
-      risk: "low",
-    },
-    {
-      id: "2",
-      name: "Consulting Services Contract",
-      value: 85000,
-      status: "active",
-      expiryDate: "2024-04-30",
-      risk: "medium",
-    },
-    {
-      id: "3",
-      name: "Office Equipment Lease",
-      value: 45000,
-      status: "pending",
-      expiryDate: "2024-07-20",
-      risk: "low",
-    },
-    {
-      id: "4",
-      name: "Marketing Services Agreement",
-      value: 95000,
-      status: "expired",
-      expiryDate: "2024-03-15",
-      risk: "high",
-    },
-    {
-      id: "5",
-      name: "Cloud Infrastructure Contract",
-      value: 180000,
-      status: "active",
-      expiryDate: "2024-05-10",
-      risk: "medium",
-    },
-  ];
+
 
   return (
     <div className="space-y-6">
@@ -141,7 +151,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <ReportsKPICard
           title="Active Contracts"
-          value="142"
+          value={kpiData?.active_contracts?.toString() || "0"}
           subtitle="+12% from last month"
           variant="active"
           trend="up"
@@ -149,23 +159,23 @@ export default function Reports() {
 
         <ReportsKPICard
           title="Expired Contracts"
-          value="23"
+          value={kpiData?.expired_contracts?.toString() || "0"}
           subtitle="Needs attention"
           variant="expired"
         />
 
         <ReportsKPICard
           title="Total Contract Value"
-          value="$2.4M"
+          value={`Rp ${kpiData?.total_contract_value ? (kpiData.total_contract_value / 1000000000).toFixed(1) + 'B' : '0'}`}
           subtitle="+8.2% growth"
           variant="value"
           trend="up"
         />
 
         <ReportsKPICard
-          title="Average Risk"
-          value="Medium"
-          subtitle="35% of contracts"
+          title="High Risk Contracts"
+          value={kpiData?.high_risk_contracts?.toString() || "0"}
+          subtitle={`${kpiData?.high_risk_percentage?.toFixed(1) || '0'}% of total`}
           variant="distribution"
         />
       </div>
@@ -177,7 +187,7 @@ export default function Reports() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Contract Status
           </h3>
-          <ContractStatus />
+          <ContractStatus kpiData={kpiData} />
         </div>
 
         {/* Expiring Contracts */}
@@ -186,12 +196,12 @@ export default function Reports() {
             Expiring Contracts
           </h3>
           <div className="h-80">
-            <ExpiringContracts />
+            <ExpiringContracts kpiData={kpiData} />
           </div>
         </div>
 
         {/* Risk Distribution Chart */}
-          <RiskDistribution />
+          <RiskDistribution kpiData={kpiData} />
       </div>
 
       {/* Contracts Summary Table */}
@@ -204,6 +214,8 @@ export default function Reports() {
             <input
               type="text"
               placeholder="Search contracts..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -234,11 +246,12 @@ export default function Reports() {
               {contractsSummary.map((contract) => (
                 <tr
                   key={contract.id}
-                  className="border-b border-gray-100 hover:bg-gray-50"
+                  onClick={() => handleViewContract(contract.id)}
+                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                 >
                   <td className="py-3 px-4 text-gray-900">{contract.name}</td>
                   <td className="py-3 px-4 text-gray-600">
-                    ${contract.value.toLocaleString()}
+                    Rp {contract.value_rp.toLocaleString()}
                   </td>
                   <td className="py-3 px-4">
                     <span
@@ -254,7 +267,7 @@ export default function Reports() {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-gray-600">
-                    {new Date(contract.expiryDate).toLocaleDateString()}
+                    {new Date(contract.end_date).toLocaleDateString()}
                   </td>
                   <td className="py-3 px-4">
                     <span

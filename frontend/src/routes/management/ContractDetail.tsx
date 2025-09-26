@@ -1,18 +1,6 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-
-interface ContractDetailData {
-  id: string;
-  name: string;
-  firstParty: string;
-  secondParty: string;
-  value: number;
-  duration: string;
-  status: "active" | "pending" | "expired";
-  riskLevel: "low" | "medium" | "high";
-  contractId: string;
-  lastUpdated: string;
-}
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { managementService, type ContractDetail as ContractDetailType } from "../../services/managementService";
 
 interface LegalNote {
   id: string;
@@ -36,20 +24,42 @@ export default function ContractDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [contractData, setContractData] = useState<ContractDetailType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data berdasarkan screenshot
-  const contractData: ContractDetailData = {
-    id: "1",
-    name: "IT Infrastructure Services Agreement",
-    firstParty: "PT ILCS",
-    secondParty: "PT Tech Solutions",
-    value: 2450000000,
-    duration: "01 Jan 2024 - 31 Dec 2026",
-    status: "pending",
-    riskLevel: "high",
-    contractId: "PCTR-2024-0389",
-    lastUpdated: "15 Jan 2024, 14:30"
-  };
+  useEffect(() => {
+    const fetchContractDetail = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const detail = await managementService.getContractDetail(id);
+        setContractData(detail);
+      } catch (error) {
+        console.error('Error fetching contract detail:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContractDetail();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-gray-500">Loading contract details...</div>
+      </div>
+    );
+  }
+
+  if (!contractData) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-gray-500">Contract not found</div>
+      </div>
+    );
+  }
 
   const legalNotes: LegalNote[] = [
     {
@@ -181,10 +191,10 @@ export default function ContractDetail() {
                     <span className="text-sm font-medium text-gray-500">Contract Parties</span>
                     <div className="mt-1">
                       <div className="text-sm text-gray-900">
-                        <span className="font-medium">First Party:</span> {contractData.firstParty}
+                        <span className="font-medium">First Party:</span> {contractData.first_party}
                       </div>
                       <div className="text-sm text-gray-900">
-                        <span className="font-medium">Second Party:</span> {contractData.secondParty}
+                        <span className="font-medium">Second Party:</span> {contractData.second_party}
                       </div>
                     </div>
                   </div>
@@ -192,7 +202,7 @@ export default function ContractDetail() {
                   <div>
                     <span className="text-sm font-medium text-gray-500">Contract Value</span>
                     <div className="text-lg font-semibold text-gray-900">
-                      {formatCurrency(contractData.value)}
+                      {formatCurrency(contractData.value_rp)}
                     </div>
                   </div>
                 </div>
@@ -203,7 +213,7 @@ export default function ContractDetail() {
                 <div className="space-y-3">
                   <div>
                     <span className="text-sm font-medium text-gray-500">Duration</span>
-                    <div className="text-sm text-gray-900">{contractData.duration}</div>
+                    <div className="text-sm text-gray-900">{contractData.duration_months} months ({new Date(contractData.start_date).toLocaleDateString()} - {new Date(contractData.end_date).toLocaleDateString()})</div>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -220,17 +230,17 @@ export default function ContractDetail() {
                     <div>
                       <span className="text-sm font-medium text-gray-500">Risk Level</span>
                       <div className="mt-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(contractData.riskLevel)}`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(contractData.risk)}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></span>
-                          {contractData.riskLevel === 'high' ? 'High Risk' : contractData.riskLevel}
+                          {contractData.risk === 'high' ? 'High Risk' : contractData.risk}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="text-right text-sm text-gray-500">
-                    <div>Contract ID: {contractData.contractId}</div>
-                    <div>Last Updated: {contractData.lastUpdated}</div>
+                    <div>Contract ID: {contractData.id}</div>
+                    <div>Last Updated: {new Date(contractData.created_at).toLocaleDateString()}</div>
                   </div>
                 </div>
               </div>
