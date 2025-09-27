@@ -12,13 +12,7 @@ interface LegalNote {
   type: "warning" | "info";
 }
 
-interface RiskFactor {
-  type: string;
-  description: string;
-  severity: "Low" | "Medium" | "High";
-  found_keywords: string[];
-  keyword_count: number;
-}
+
 
 export default function ContractDetail() {
   const { id } = useParams();
@@ -26,6 +20,7 @@ export default function ContractDetail() {
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [contractData, setContractData] = useState<ContractDetailType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const fetchContractDetail = async () => {
@@ -136,10 +131,12 @@ export default function ContractDetail() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
       case 'expired': return 'bg-red-100 text-red-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -153,10 +150,101 @@ export default function ContractDetail() {
     }
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
+    if (!contractData?.id || actionLoading) return;
+    
     setActiveAction(action);
-    // Implementasi action sesuai kebutuhan
-    console.log(`Action: ${action}`);
+    setActionLoading(true);
+    
+    try {
+      // Import supabase untuk update status  
+      const supabaseModule = await import('../../utils/supabase');
+      const supabase = supabaseModule.default;
+      
+      console.log('Starting action:', action, 'for contract ID:', contractData.id);
+      
+      let newStatus = '';
+      let successMessage = '';
+      let notes = '';
+      
+      if (action === 'approve') {
+        newStatus = 'Active';  // Using proper enum case
+        successMessage = 'Contract has been successfully activated!';
+        notes = 'Contract approved and activated by management';
+        
+      } else if (action === 'clarification') {
+        newStatus = 'Rejected';  // Using proper enum case
+        successMessage = 'Contract has been rejected and sent back for clarification.';
+        notes = 'Contract rejected by management - requires clarification';
+      }
+      
+      // First, check if contract exists
+      const { data: existingContract, error: checkError } = await supabase
+        .from('contracts')
+        .select('id, status')
+        .eq('id', contractData.id)
+        .single();
+        
+      if (checkError) {
+        console.error('Error checking contract:', checkError);
+        alert(`Contract not found or inaccessible: ${checkError.message}`);
+        return;
+      }
+      
+      console.log('Existing contract found:', existingContract);
+      
+      // Update contract status
+      const { data: updateData, error: contractError } = await supabase
+        .from('contracts')
+        .update({ 
+          status: newStatus
+        })
+        .eq('id', contractData.id)
+        .select();
+        
+      if (contractError) {
+        console.error('Error updating contract status:', contractError);
+        alert(`Failed to update contract: ${contractError.message || 'Unknown error'}`);
+        return;
+      }
+      
+      console.log('Contract updated successfully:', updateData);
+      
+      // Add lifecycle entry (optional, don't fail if this fails)
+      try {
+        const { error: lifecycleError } = await supabase
+          .from('contract_lifecycle')
+          .insert({
+            contract_id: contractData.id,
+            stage: newStatus,
+            started_at: new Date().toISOString(),
+            notes: notes
+          });
+          
+        if (lifecycleError) {
+          console.warn('Warning - lifecycle entry failed but contract was updated:', lifecycleError);
+        } else {
+          console.log('Lifecycle entry added successfully');
+        }
+      } catch (lifecycleErr) {
+        console.warn('Warning - lifecycle entry failed but contract was updated:', lifecycleErr);
+      }
+      
+      // Show success message
+      alert(successMessage);
+      
+      // Navigate back to reports after successful action
+      setTimeout(() => {
+        navigate('/management/reports');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error handling action:', error);
+      alert(`An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(false);
+      setActiveAction(null);
+    }
   };
 
   return (
@@ -222,7 +310,9 @@ export default function ContractDetail() {
                       <div className="mt-1">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(contractData.status)}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></span>
-                          {contractData.status === 'pending' ? 'Pending Review' : contractData.status}
+                          {contractData.status?.toLowerCase() === 'pending' ? 'Pending Review' : 
+                           contractData.status?.toLowerCase() === 'draft' ? 'Draft' :
+                           contractData.status}
                         </span>
                       </div>
                     </div>
@@ -429,33 +519,47 @@ export default function ContractDetail() {
           
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => handleAction('hold')}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Hold Decision
-            </button>
-            
-            <button 
               onClick={() => handleAction('clarification')}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
+              disabled={actionLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                actionLoading 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                  : 'bg-orange-500 text-white hover:bg-orange-600'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Request Clarification
+              {actionLoading && activeAction === 'clarification' ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              {actionLoading && activeAction === 'clarification' ? 'Rejecting...' : 'Reject'}
             </button>
             
             <button 
               onClick={() => handleAction('approve')}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              disabled={actionLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                actionLoading 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Approve Contract
+              {actionLoading && activeAction === 'approve' ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {actionLoading && activeAction === 'approve' ? 'Activating...' : 'Active Contract'}
             </button>
           </div>
         </div>

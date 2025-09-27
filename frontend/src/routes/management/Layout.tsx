@@ -1,13 +1,14 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/AuthProvider'
+import { BarChart3, Shield, Clock, FileText, type LucideIcon } from 'lucide-react'
 import Logo from '@/assets/logo.svg'
 
-const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
-  { to: '/management', label: 'KPI Monitoring', end: true },
-  { to: '/management/risk-heatmap', label: 'Risk Heatmap' },
-  { to: '/management/lifecycle', label: 'Lifecycle Timeline' },
-  { to: '/management/reports', label: 'Reports' },
+const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean; icon: LucideIcon }> = [
+  { to: '/management', label: 'KPI Monitoring', end: true, icon: BarChart3 },
+  { to: '/management/risk-heatmap', label: 'Risk Heatmap', icon: Shield },
+  { to: '/management/lifecycle', label: 'Lifecycle Timeline', icon: Clock },
+  { to: '/management/reports', label: 'Reports', icon: FileText },
 ]
 
 function getInitials(name: string | null | undefined) {
@@ -38,104 +39,62 @@ export default function ManagementLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F5F7FA]">
-      <aside className="group hidden w-[76px] overflow-hidden bg-white shadow-sm transition-all duration-300 hover:w-60 md:block">
+    <div className="flex max-w-screen bg-[#F5F7FA]">
+      <aside className="group w-[60px] overflow-hidden bg-white shadow-sm transition-all duration-300 hover:w-48">
         <div className="flex h-full flex-col">
-          <div className="flex items-center gap-3 px-4 py-5">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-[#357ABD]/10 text-sm font-semibold text-[#357ABD]">
-              <img src={Logo} alt="OptiMind Logo" className="h-6 w-6" />
+          <div className="flex items-center gap-2 px-3 py-4">
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-[#357ABD]/10 text-sm font-semibold text-[#357ABD]">
+              <img src={Logo} alt="OptiMind Logo" className="h-5 w-5" />
             </div>
             <div className="hidden group-hover:block">
-              <div className="text-sm font-semibold text-slate-800">OptiMind</div>
-              <div className="text-xs text-slate-500">Management Suite</div>
+              <div className="text-sm font-semibold text-slate-800">OptiMind | ILCS</div>
             </div>
           </div>
-          <nav className="flex-1 space-y-1 px-3">
+          <nav className="flex-1 space-y-1 px-1 pb-4">
             {nav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  `group/nav flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-all duration-200 justify-center group-hover:justify-start ${
                     isActive
-                      ? 'bg-[#357ABD] text-white'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'bg-[#357ABD] text-white shadow'
+                      : 'bg-transparent text-slate-900 hover:bg-slate-100'
                   }`
                 }
               >
-                <div className="grid h-6 w-6 place-items-center">
-                  {item.label === 'KPI Monitoring' && (
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 3v18h18" />
-                      <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
-                    </svg>
-                  )}
-                  {item.label === 'Risk Heatmap' && (
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                      <circle cx="12" cy="12" r="4" />
-                    </svg>
-                  )}
-                  {item.label === 'Lifecycle Timeline' && (
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M8 6h13" />
-                      <path d="M8 12h13" />
-                      <path d="M8 18h13" />
-                      <path d="M3 6h.01" />
-                      <path d="M3 12h.01" />
-                      <path d="M3 18h.01" />
-                    </svg>
-                  )}
-                  {item.label === 'Reports' && (
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14,2 14,8 20,8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10,9 9,9 8,9" />
-                    </svg>
-                  )}
-                  {item.label === 'Settings' && (
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M12 1v6m0 6v6" />
-                      <path d="m15.5 3.5-3 3-3-3" />
-                      <path d="m15.5 20.5-3-3-3 3" />
-                      <path d="M1 12h6m6 0h6" />
-                      <path d="m3.5 15.5 3-3-3-3" />
-                      <path d="m20.5 15.5-3-3 3-3" />
-                    </svg>
-                  )}
-                </div>
-                <span className="hidden group-hover:block">{item.label}</span>
+                {({ isActive }) => {
+                  const Icon = item.icon
+                  return (
+                    <>
+                      <Icon
+                        className={`h-5 w-5 flex-shrink-0 ${
+                          isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-900'
+                        }`}
+                        aria-hidden
+                      />
+                      <span
+                        className={`hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-150 group-hover:ml-1 group-hover:inline group-hover:opacity-100 ${
+                          isActive ? 'text-white group-hover:text-white' : 'text-slate-900 group-hover:text-slate-900'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </>
+                  )
+                }}
               </NavLink>
             ))}
           </nav>
         </div>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center gap-4 bg-white px-6 py-4 shadow-sm">
-          <div className="hidden w-[76px] md:block" aria-hidden />
+        <header className="flex items-center gap-3 bg-white px-4 py-3 shadow-sm">
+          <div className="w-[60px]" aria-hidden />  
+          
           <div className="flex flex-1 items-center justify-center">
-            <div className="flex w-full max-w-md items-center gap-3 rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-500">
-              <svg
-                className="h-4 w-4 text-slate-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <line x1="16.65" y1="16.65" x2="21" y2="21" />
-              </svg>
-              <input
-                placeholder="Search management data..."
-                className="w-full border-none bg-transparent focus:outline-none"
-              />
-            </div>
+            <h1 className="text-lg font-semibold text-slate-800">Management</h1>
           </div>
           <div className="relative flex items-center">
             <button
@@ -178,7 +137,7 @@ export default function ManagementLayout() {
             )}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4">
           <Outlet />
         </main>
       </div>

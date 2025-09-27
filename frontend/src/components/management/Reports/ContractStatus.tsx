@@ -14,7 +14,7 @@ interface ContractStatusProps {
 }
 
 export default function ContractStatus({ kpiData }: ContractStatusProps) {
-  // Generate data from KPI
+  // Generate data from KPI - Updated logic: Active = active, Expired = expired, Pending = others
   const chartData: ContractStatusData[] = [
     { label: 'Active', value: kpiData?.active_contracts || 0, color: '#10B981' },
     { label: 'Pending', value: kpiData?.pending_contracts || 0, color: '#F59E0B' },
@@ -48,7 +48,7 @@ export default function ContractStatus({ kpiData }: ContractStatusProps) {
 
           {/* Grid lines */}
           <div className="absolute inset-0 flex flex-col justify-between">
-            {yAxisLabels.map((label, index) => (
+            {yAxisLabels.map((_, index) => (
               <div key={index} className="border-t border-gray-100 w-full"></div>
             ))}
           </div>

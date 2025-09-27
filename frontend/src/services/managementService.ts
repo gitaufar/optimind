@@ -84,14 +84,87 @@ export interface RiskFinding {
 class ManagementService {
   // Get comprehensive KPI data for management dashboard
   async getManagementKPI(): Promise<ManagementKPIData> {
-    const { data, error } = await supabase
-      .from('management_kpi')
-      .select('*')
-      .single();
+    try {
+      // Get contract counts by status
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('status, value_rp, risk, end_date');
 
-    if (error) {
-      console.error('Error fetching management KPI:', error);
-      // Return mock data as fallback
+      if (contractsError) {
+        console.error('Error fetching contracts for KPI:', contractsError);
+        throw contractsError;
+      }
+
+      console.log('Contracts fetched for KPI calculation:', contracts?.map(c => ({ id: c.status, risk: c.risk })));
+      
+      // Calculate contract status counts - case insensitive
+      const activeContracts = contracts?.filter(c => c.status?.toLowerCase() === 'active').length || 0;
+      const expiredContracts = contracts?.filter(c => c.status?.toLowerCase() === 'expired').length || 0;
+      const pendingContracts = contracts?.filter(c => 
+        c.status?.toLowerCase() !== 'active' && c.status?.toLowerCase() !== 'expired'
+      ).length || 0;
+      const totalContracts = contracts?.length || 0;
+
+      console.log('Status counts:', { activeContracts, expiredContracts, pendingContracts, totalContracts });
+
+      // Calculate other metrics - case insensitive
+      const highRiskContracts = contracts?.filter(c => c.risk?.toLowerCase() === 'high').length || 0;
+      const totalContractValue = contracts?.reduce((sum, c) => sum + (c.value_rp || 0), 0) || 0;
+      const avgActiveContractValue = activeContracts > 0 
+        ? (contracts?.filter(c => c.status?.toLowerCase() === 'active').reduce((sum, c) => sum + (c.value_rp || 0), 0) || 0) / activeContracts
+        : 0;
+
+      // Calculate expiring contracts
+      const now = new Date();
+      const days30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const days60 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+      const days90 = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+      const expiring30Days = contracts?.filter(c => {
+        const endDate = new Date(c.end_date);
+        return endDate > now && endDate <= days30;
+      }).length || 0;
+
+      const expiring60Days = contracts?.filter(c => {
+        const endDate = new Date(c.end_date);
+        return endDate > now && endDate <= days60;
+      }).length || 0;
+
+      const expiring90Days = contracts?.filter(c => {
+        const endDate = new Date(c.end_date);
+        return endDate > now && endDate <= days90;
+      }).length || 0;
+
+      // Calculate risk distribution - case insensitive
+      const lowRiskCount = contracts?.filter(c => c.risk?.toLowerCase() === 'low').length || 0;
+      const mediumRiskCount = contracts?.filter(c => c.risk?.toLowerCase() === 'medium').length || 0;
+      const highRiskCount = contracts?.filter(c => c.risk?.toLowerCase() === 'high').length || 0;
+      const totalRiskAssessed = lowRiskCount + mediumRiskCount + highRiskCount;
+      
+      console.log('Risk counts:', { lowRiskCount, mediumRiskCount, highRiskCount, totalRiskAssessed });
+
+      return {
+        total_contracts: totalContracts,
+        active_contracts: activeContracts,
+        pending_contracts: pendingContracts,
+        expired_contracts: expiredContracts,
+        high_risk_contracts: highRiskContracts,
+        expiring_30_days: expiring30Days,
+        expiring_60_days: expiring60Days,
+        expiring_90_days: expiring90Days,
+        total_contract_value: totalContractValue,
+        avg_active_contract_value: avgActiveContractValue,
+        low_risk_count: lowRiskCount,
+        medium_risk_count: mediumRiskCount,
+        high_risk_count: highRiskCount,
+        total_risk_assessed: totalRiskAssessed,
+        low_risk_percentage: totalRiskAssessed > 0 ? (lowRiskCount / totalRiskAssessed) * 100 : 0,
+        medium_risk_percentage: totalRiskAssessed > 0 ? (mediumRiskCount / totalRiskAssessed) * 100 : 0,
+        high_risk_percentage: totalRiskAssessed > 0 ? (highRiskCount / totalRiskAssessed) * 100 : 0
+      };
+    } catch (error) {
+      console.error('Error calculating management KPI:', error);
+      // Return fallback data
       return {
         total_contracts: 247,
         active_contracts: 142,
@@ -112,8 +185,6 @@ class ManagementService {
         high_risk_percentage: 20
       };
     }
-
-    return data;
   }
 
   // Get contracts list for reports table

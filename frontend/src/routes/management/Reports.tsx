@@ -20,25 +20,51 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching fresh data for Reports...');
+      const [kpiResult, contractsResult] = await Promise.all([
+        managementService.getManagementKPI(),
+        managementService.getContractsSummary(20)
+      ]);
+      
+      console.log('KPI Data:', kpiResult);
+      console.log('Contracts Summary:', contractsResult);
+      
+      setKpiData(kpiResult);
+      setContractsSummary(contractsResult);
+    } catch (error) {
+      console.error('Error fetching reports data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [kpiResult, contractsResult] = await Promise.all([
-          managementService.getManagementKPI(),
-          managementService.getContractsSummary(20)
-        ]);
-        
-        setKpiData(kpiResult);
-        setContractsSummary(contractsResult);
-      } catch (error) {
-        console.error('Error fetching reports data:', error);
-      } finally {
-        setLoading(false);
+    fetchData();
+    
+    // Listen for focus event to refresh data when user returns to tab/page
+    const handleFocus = () => {
+      console.log('Page focused, refreshing data...');
+      fetchData();
+    };
+    
+    // Listen for visibility change to refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing data...');
+        fetchData();
       }
     };
-
-    fetchData();
+    
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleSearch = async (query: string) => {
@@ -51,13 +77,8 @@ export default function Reports() {
         console.error('Error searching contracts:', error);
       }
     } else {
-      // If search is cleared, reload all contracts
-      try {
-        const contracts = await managementService.getContractsSummary(20);
-        setContractsSummary(contracts);
-      } catch (error) {
-        console.error('Error reloading contracts:', error);
-      }
+      // If search is cleared, reload all data including KPIs
+      fetchData();
     }
   };
 
@@ -148,13 +169,20 @@ export default function Reports() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <ReportsKPICard
           title="Active Contracts"
           value={kpiData?.active_contracts?.toString() || "0"}
-          subtitle="+12% from last month"
+          subtitle="Currently running"
           variant="active"
           trend="up"
+        />
+
+        <ReportsKPICard
+          title="Pending Contracts"
+          value={kpiData?.pending_contracts?.toString() || "0"}
+          subtitle="Under review"
+          variant="pending"
         />
 
         <ReportsKPICard
@@ -256,11 +284,15 @@ export default function Reports() {
                   <td className="py-3 px-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        contract.status === "active"
+                        contract.status?.toLowerCase() === "active"
                           ? "bg-green-100 text-green-800"
-                          : contract.status === "pending"
+                          : contract.status?.toLowerCase() === "pending" || contract.status?.toLowerCase() === "draft"
                           ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          : contract.status?.toLowerCase() === "rejected"
+                          ? "bg-red-100 text-red-800"
+                          : contract.status?.toLowerCase() === "expired"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {contract.status}
@@ -272,11 +304,13 @@ export default function Reports() {
                   <td className="py-3 px-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        contract.risk === "low"
+                        contract.risk?.toLowerCase() === "low"
                           ? "bg-green-100 text-green-800"
-                          : contract.risk === "medium"
+                          : contract.risk?.toLowerCase() === "medium"
                           ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          : contract.risk?.toLowerCase() === "high"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {contract.risk}
