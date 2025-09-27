@@ -3,9 +3,8 @@ import { useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import Card from '@/components/Card'
 import { useContracts } from '@/hooks/useContracts'
-import { AlertTriangle, AlertCircle, Info, Download, RefreshCw } from 'lucide-react'
+import { AlertTriangle, AlertCircle, Info, RefreshCw } from 'lucide-react'
 import CardDashboard from '@/components/Legal/CardDashboard'
-import ButtonBlue from '@/components/ButtonBlue'
 import ContractListLegal from '@/components/Legal/ContractListLegal'
 
 export default function LegalRiskCenter() {
@@ -170,8 +169,4 @@ function Select({
       </select>
     </label>
   )
-}
-
-async function exportReport() {
-  alert('Export report downloaded (mock).')
 }

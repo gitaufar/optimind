@@ -1,7 +1,7 @@
 // components/Legal/InteractiveDocumentViewer.tsx
 
 import { useState } from 'react';
-import { ZoomIn, ZoomOut, Download, X, Check } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 
 type DocumentSection = {
   title: string;

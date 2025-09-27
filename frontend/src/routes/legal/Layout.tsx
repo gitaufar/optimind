@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/auth/AuthProvider'
-import { LineChart, Inbox, AlertTriangle } from 'lucide-react'
+import { LineChart, Inbox, AlertTriangle, type LucideIcon } from 'lucide-react'
 import Logo from '@/assets/logo.svg'
 
 const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean; icon: LucideIcon }> = [
