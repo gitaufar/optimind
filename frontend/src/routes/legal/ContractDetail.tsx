@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useAnalyzer } from '@/hooks/useContracts'
 import supabase from '@/utils/supabase'
 
@@ -11,6 +11,7 @@ import InteractiveDocumentViewer from '@/components/Legal/AIRecommendation'
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   // Pastikan hook memberikan nilai default jika datanya belum siap
   const { findings = [] } = useAnalyzer(id ?? undefined) || { findings: [] }
 
@@ -18,6 +19,7 @@ export default function ContractDetail() {
   const [notes, setNotes] = useState<any[]>([])
   const [aiAnalysis, setAiAnalysis] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   // Ambil detail kontrak
   useEffect(() => {
@@ -167,6 +169,188 @@ export default function ContractDetail() {
     if (id) addNote(id, newNoteContent)
   }
 
+  // Handler untuk approve contract
+  const handleApprove = async () => {
+    if (!id || actionLoading) return
+    
+    setActionLoading('approve')
+    try {
+      // Update contract status - sesuai dengan tabel contracts di Supabase
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({ 
+          status: 'Reviewed',
+          created_at: new Date().toISOString() // Update timestamp
+        })
+        .eq('id', id)
+      
+      if (contractError) {
+        console.error('Contract update error:', contractError)
+        throw contractError
+      }
+
+      // Add legal note untuk audit trail
+      const { error: noteError } = await supabase
+        .from('legal_notes')
+        .insert({
+          contract_id: id,
+          author: 'legal@ilcs.co.id',
+          note: 'Contract Reviewed by Legal team and forwarded to Management for review.'
+        })
+
+      if (noteError) {
+        console.error('Note insert error:', noteError)
+        // Don't throw - note is not critical
+      }
+
+      // Insert lifecycle record sesuai dengan tabel contract_lifecycle
+      const { error: lifecycleError } = await supabase
+        .from('contract_lifecycle')
+        .insert({
+          contract_id: id,
+          stage: 'management_review',
+          started_at: new Date().toISOString(),
+          notes: 'Contract approved by legal team and sent to management for review'
+        })
+
+      if (lifecycleError) {
+        console.error('Lifecycle insert error:', lifecycleError)
+        // Don't throw - lifecycle is not critical
+      }
+      
+      // Update local state
+            setMeta((prev: any) => ({ ...prev, status: 'Reviewed' }))
+      
+      // Refresh notes to show the new audit note
+      const { data: updatedNotes } = await supabase
+        .from('legal_notes')
+        .select('*')
+        .eq('contract_id', id)
+        .order('created_at', { ascending: false })
+      
+      if (updatedNotes) setNotes(updatedNotes)
+      
+      alert('Contract reviewed successfully! It has been forwarded to management for final review.')
+      
+      // Navigate back to inbox after successful review
+      setTimeout(() => {
+        navigate('/legal/inbox')
+      }, 1500)
+    } catch (error) {
+      console.error('Error approving contract:', error)
+      alert('Failed to review contract. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  // Handler untuk request revision
+  const handleRequestRevision = async () => {
+    if (!id || actionLoading) return
+    
+    setActionLoading('revision')
+    try {
+      // Update contract status - sesuai dengan tabel contracts di Supabase
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({ 
+          status: 'Revision Requested',
+          created_at: new Date().toISOString() // Update timestamp
+        })
+        .eq('id', id)
+      
+      if (contractError) {
+        console.error('Contract update error:', contractError)
+        throw contractError
+      }
+
+      // Add legal note untuk audit trail
+      const { error: noteError } = await supabase
+        .from('legal_notes')
+        .insert({ 
+          contract_id: id, 
+          author: 'legal@ilcs.co.id', 
+          note: 'Contract returned to procurement for revision'
+        })
+
+      if (noteError) {
+        console.error('Note insert error:', noteError)
+        // Don't throw - note is not critical
+      }
+
+      // Insert lifecycle record sesuai dengan tabel contract_lifecycle
+      const { error: lifecycleError } = await supabase
+        .from('contract_lifecycle')
+        .insert({
+          contract_id: id,
+          stage: 'procurement_revision',
+          started_at: new Date().toISOString(),
+          notes: 'Contract returned to procurement for revision by legal team'
+        })
+
+      if (lifecycleError) {
+        console.error('Lifecycle insert error:', lifecycleError)
+        // Don't throw - lifecycle is not critical
+      }
+      
+      // Update local state
+      setMeta((prev: any) => ({ 
+        ...prev, 
+        status: 'Revision Requested'
+      }))
+      
+      // Refresh notes to show the new audit note
+      const { data: updatedNotes } = await supabase
+        .from('legal_notes')
+        .select('*')
+        .eq('contract_id', id)
+        .order('created_at', { ascending: false })
+      
+      if (updatedNotes) setNotes(updatedNotes)
+      
+      alert('Contract successfully returned to procurement for revision.')
+      
+      // Navigate back to inbox after successful revision request
+      setTimeout(() => {
+        navigate('/legal/inbox')
+      }, 1500)
+    } catch (error) {
+      console.error('Error requesting revision:', error)
+      alert('Failed to request revision. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  // Handler untuk save draft notes
+  const handleSaveDraft = async () => {
+    if (!id || actionLoading) return
+    
+    setActionLoading('draft')
+    try {
+      const { error } = await supabase
+        .from('contracts')
+        .update({ 
+          status: 'Draft',
+          draft_saved_at: new Date().toISOString(),
+          draft_saved_by: 'legal@ilcs.co.id'
+        })
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // Update local state
+      setMeta((prev: any) => ({ ...prev, status: 'Draft' }))
+      
+      alert('Contract saved as draft. You can continue editing later.')
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      alert('Failed to save draft. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   if (loading || !meta) {
     return <div className="p-6">Loading contract details...</div>
   }
@@ -175,28 +359,66 @@ export default function ContractDetail() {
     <div className="space-y-6">
       <CardDetailContract contract={contractDetails} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <RiskAnalysisCard risks={analysisData} />
-        {/* AI Recommendation dari ai_risk_analysis.analysis_result */}
-        <InteractiveDocumentViewer
+      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-8 lg:grid-cols-2 items-start">
+        <div className="h-full">
+          <RiskAnalysisCard risks={analysisData} />
+        </div>
+        <div className="h-full">
+          <InteractiveDocumentViewer
           documentTitle={`AI Risk Analysis - ${aiRecommendationData.riskLevel} Risk (${Math.round((aiRecommendationData.confidence || 0) * 100)}% confidence)`}
           sections={aiRecommendationData.sections}
           suggestions={aiRecommendationData.suggestions}
         />
+        </div>
       </div>
 
       <LegalNotes notes={formattedNotes} onSaveNote={handleSaveNote} />
 
-      <div className="flex items-center justify-end gap-3">
-        <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50">
-          Save Draft Notes
-        </button>
-        <button className="rounded-lg bg-orange-500 px-4 py-2 font-semibold text-white hover:bg-orange-600">
-          Request Revision
-        </button>
-        <button className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">
-          Approve Contract
-        </button>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Current Status: <span className="font-semibold text-gray-900">{meta?.status || 'Unknown'}</span>
+          {meta?.workflow_stage && (
+            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+              {meta.workflow_stage.replace(/_/g, ' ').toUpperCase()}
+            </span>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleSaveDraft}
+            disabled={actionLoading !== null}
+            className={`rounded-lg border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 transition-colors ${
+              actionLoading !== null 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-gray-50'
+            }`}
+          >
+            {actionLoading === 'draft' ? 'Saving...' : 'Save Draft Notes'}
+          </button>
+          <button 
+            onClick={handleRequestRevision}
+            disabled={actionLoading !== null || meta?.status === 'Reviewed'}
+            className={`rounded-lg bg-orange-500 px-4 py-2 font-semibold text-white transition-colors ${
+              actionLoading !== null || meta?.status === 'Approved'
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-orange-600'
+            }`}
+          >
+            {actionLoading === 'revision' ? 'Processing...' : 'Request Revision'}
+          </button>
+          <button 
+            onClick={handleApprove}
+            disabled={actionLoading !== null || meta?.status === 'Reviewed'}
+            className={`rounded-lg bg-green-600 px-4 py-2 font-semibold text-white transition-colors ${
+              actionLoading !== null || meta?.status === 'Approved'
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-green-700'
+            }`}
+          >
+            {actionLoading === 'approve' ? 'Reviewing...' : 'Review Contract'}
+          </button>
+        </div>
       </div>
     </div>
   )

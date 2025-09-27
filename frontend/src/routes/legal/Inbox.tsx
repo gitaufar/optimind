@@ -18,16 +18,21 @@ export default function LegalInbox() {
 
   const contractsMapped = useMemo(
     () =>
-      (items ?? []).map((c: any) => ({
-        id: String(c.id),
-        name: c.name ?? c.title ?? 'Untitled',
-        party: [c.first_party, c.second_party].filter(Boolean).join(' - ') || '-',
-        value:
-          typeof c.value_rp === 'number'
-            ? `Rp ${Number(c.value_rp).toLocaleString('id-ID')}`
-            : (c.value ?? '-'),
-        risk: c.risk ?? c.risk_level ?? 'Low',
-      })),
+      (items ?? [])
+        .filter((c: any) => {
+          const status = c.status?.toLowerCase() || ''
+          return status !== 'reviewed' && status !== 'revision requested'
+        })
+        .map((c: any) => ({
+          id: String(c.id),
+          name: c.name ?? c.title ?? 'Untitled',
+          party: [c.first_party, c.second_party].filter(Boolean).join(' - ') || '-',
+          value:
+            typeof c.value_rp === 'number'
+              ? `Rp ${Number(c.value_rp).toLocaleString('id-ID')}`
+              : (c.value ?? '-'),
+          risk: c.risk ?? c.risk_level ?? 'Low',
+        })),
     [items]
   )
 

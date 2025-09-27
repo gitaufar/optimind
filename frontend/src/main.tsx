@@ -24,7 +24,6 @@ import LegalLayout from './routes/legal/Layout'
 import LegalDashboard from './routes/legal/Dashboard'
 import LegalInbox from './routes/legal/Inbox'
 import LegalRiskCenter from './routes/legal/RiskCenter'
-import LegalAnalyzer from './routes/legal/Analyzer'
 import ContractDetail from './routes/legal/ContractDetail'
 
 // Management
@@ -70,7 +69,6 @@ const router = createBrowserRouter([
       { index: true, element: <LegalDashboard /> },
       { path: 'inbox', element: <LegalInbox /> },
       { path: 'risk-center', element: <LegalRiskCenter /> },
-      { path: 'ai-analyzer', element: <LegalAnalyzer /> },
       { path: 'contracts/:id', element: <ContractDetail /> },
     ],
   },

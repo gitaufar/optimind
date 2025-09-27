@@ -1,19 +1,19 @@
 "use client"
 import { useMemo } from 'react'
-import Card from '@/components/Card'
-import { useAnalyzer, useContracts, useLegalKPI } from '@/hooks/useContracts'
+import { useContracts, useLegalKPI } from '@/hooks/useContracts'
 import ContractListLegal from '@/components/Legal/ContractListLegal'
 import CardDashboard from '@/components/Legal/CardDashboard'
 import { FileText, AlertTriangle, Clock, RefreshCw } from 'lucide-react'
+import RiskRadar from '@/components/Legal/RiskRadar'
+import AIContract from '@/components/Legal/AIContract'
 
 export default function LegalDashboard() {
-  const { kpi, loading: kpiLoading, error: kpiError, refresh: refreshKPI } = useLegalKPI()
-  const { items, loading: contractsLoading, error: contractsError } = useContracts()
-  const latest = useMemo(() => items[0]?.id ?? null, [items])
-  const { entities, findings, loading: analysisLoading } = useAnalyzer(latest ?? undefined)
+  const { error: kpiError, refresh: refreshKPI } = useLegalKPI()
+  const { items, error: contractsError } = useContracts()
 
-  // Loading state
-  const isLoading = kpiLoading || contractsLoading || analysisLoading
+  // Removed latest since RiskRadar now auto-fetches latest contract
+
+  // Loading state removed since components fetch independently
 
   // Error handling
   if (kpiError || contractsError) {
@@ -37,127 +37,71 @@ export default function LegalDashboard() {
 
   const contractsMapped = useMemo(
     () =>
-      (items ?? []).slice(0, 10).map((it: any) => ({
-        id: String(it.id),
-        name: it.name ?? it.title ?? 'Untitled',
-        party: [it.first_party, it.second_party].filter(Boolean).join(' → ') || it.party || it.counterparty || '-',
-        value:
-          typeof it.value_rp === 'number'
-            ? `Rp ${it.value_rp.toLocaleString('id-ID')}`
-            : typeof it.value === 'number'
-            ? `Rp ${it.value.toLocaleString('id-ID')}`
-            : (it.value ?? '-'),
-        risk: it.risk ?? it.risk_level ?? 'low',
-      })),
+      (items ?? [])
+        .filter((it: any) => it.status !== 'Reviewed') // Filter out reviewed contracts
+        .slice(0, 10)
+        .map((it: any) => {
+          // Safeguard format nilai dari numeric Supabase (string) atau number
+          const raw = it?.value_rp ?? it?.value
+          const num =
+            typeof raw === 'number'
+              ? raw
+              : typeof raw === 'string' && raw.trim() !== '' && !Number.isNaN(Number(raw))
+              ? Number(raw)
+              : null
+          return {
+            id: String(it.id),
+            name: it.name ?? it.title ?? 'Untitled',
+            party: [it.first_party, it.second_party].filter(Boolean).join(' → ') || it.party || it.counterparty || '-',
+            value: num !== null ? `Rp ${num.toLocaleString('id-ID')}` : (raw ?? '-'),
+            risk: it.risk ?? it.risk_level ?? 'low',
+          }
+        }),
     [items]
   )
 
+  // Calculate real-time KPI from filtered contracts
+  const realTimeKPI = useMemo(() => {
+    const activeContracts = (items ?? []).filter((it: any) => it.status !== 'Reviewed')
+    const thisWeekStart = new Date()
+    thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay()) // Start of week
+    
+    return {
+      contracts_this_week: activeContracts.filter((it: any) => {
+        const createdAt = new Date(it.created_at)
+        return createdAt >= thisWeekStart
+      }).length,
+      high_risk: activeContracts.filter((it: any) => {
+        const risk = (it.risk ?? it.risk_level ?? '').toLowerCase()
+        return risk === 'high'
+      }).length,
+      pending_ai: activeContracts.filter((it: any) => {
+        const status = (it.status ?? '').toLowerCase()
+        return status === 'draft' || status === 'pending' || status === 'on review' || status === 'revision requested'
+      }).length
+    }
+  }, [items])
+
   return (
     <div className="grid gap-6">
-      {/* Loading overlay */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 text-blue-600 animate-spin mr-2" />
-          <span className="text-sm text-gray-600">Loading dashboard data...</span>
-        </div>
-      )}
-      
+
       <div className="grid gap-4 md:grid-cols-3">
-        <CardDashboard
-          title="Kontrak Minggu Ini"
-          value={kpi?.contracts_this_week ?? 0}
-          right={<FileText className="h-5 w-5 text-blue-600" />}
-        />
-        <CardDashboard
-          title="High Risk Contracts"
-          value={kpi?.high_risk ?? 0}
-          right={<AlertTriangle className="h-5 w-5 text-red-600" />}
-        />
-        <CardDashboard
-          title="Pending Review AI"
-          value={kpi?.pending_ai ?? 0}
-          right={<Clock className="h-5 w-5 text-amber-600" />}
-        />
+        <CardDashboard title="Contract This Week" value={realTimeKPI?.contracts_this_week ?? 0} right={<FileText className="h-5 w-5 text-blue-600" />} />
+        <CardDashboard title="High Risk Contracts" value={realTimeKPI?.high_risk ?? 0} right={<AlertTriangle className="h-5 w-5 text-red-600" />} />
+        <CardDashboard title="Pending Review" value={realTimeKPI?.pending_ai ?? 0} right={<Clock className="h-5 w-5 text-amber-600" />} />
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-4'>
-        <ContractListLegal
-          variant="dashboard"
-          contracts={contractsMapped}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-4">
+        <ContractListLegal variant="dashboard" contracts={contractsMapped} />
 
-        <div className="grid gap-4 md:grid-rows-2">
-          <Card 
-            title="AI Contract Analyzer" 
-            paragraph={latest ? `Analysis for latest contract (${contractsMapped[0]?.name || 'Unknown'})` : "Select a contract to view AI analysis"}
-          >
-            {!entities ? (
-              <div className="text-sm text-gray-600">
-                {latest ? "Analyzing contract..." : "Belum ada hasil."}
-              </div>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                <li className="flex justify-between">
-                  <span className="font-medium">First party:</span>
-                  <span className="text-gray-600">{entities.first_party ?? '-'}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="font-medium">Second party:</span>
-                  <span className="text-gray-600">{entities.second_party ?? '-'}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="font-medium">Value:</span>
-                  <span className="text-gray-600">
-                    Rp {Number(entities.value_rp || 0).toLocaleString('id-ID')}
-                  </span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="font-medium">Duration:</span>
-                  <span className="text-gray-600">{entities.duration_months ?? '-'} bulan</span>
-                </li>
-                <li className="flex flex-col">
-                  <span className="font-medium mb-1">Penalty:</span>
-                  <span className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                    {entities.penalty ?? '-'}
-                  </span>
-                </li>
-              </ul>
-            )}
-          </Card>
+        <div className="space-y-4">
+          {/* AIContract otomatis ambil kontrak terbaru */}
+          <AIContract />
 
-          <Card 
-            title="Risk Radar" 
-            paragraph={`${findings.length} risk findings detected by AI`}
-          >
-            {findings.length === 0 ? (
-              <div className="text-sm text-gray-600">Belum ada temuan risiko.</div>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {findings.slice(0, 5).map((f) => (
-                  <li key={f.id} className="border-l-4 border-red-400 pl-3 py-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900">
-                        {f.section ?? 'Unknown Section'}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        f.level === 'High' ? 'bg-red-100 text-red-800' :
-                        f.level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {f.level} Risk
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-1">{f.title}</p>
-                  </li>
-                ))}
-                {findings.length > 5 && (
-                  <li className="text-xs text-gray-500 border-t pt-2">
-                    +{findings.length - 5} more findings...
-                  </li>
-                )}
-              </ul>
-            )}
-          </Card>
+          {/* RiskRadar diarahkan ke kontrak terbaru secara eksplisit */}
+          <div className="max-h-96">
+            <RiskRadar />
+          </div>
         </div>
       </div>
     </div>
