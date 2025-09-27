@@ -32,7 +32,7 @@ const STATUS_BADGE: Partial<Record<Status, string>> = {
   'Revision Requested': 'bg-red-100 text-red-700 border border-red-200',
   Rejected: 'bg-red-100 text-red-700 border border-red-200',
   Active: 'bg-green-100 text-green-700 border border-green-200',
-  Expired: 'bg-slate-200 text-slate-600 border border-slate-300',
+  Expired: 'bg-red-100 text-red-800 border border-red-300',
 }
 
 const RISK_BADGE: Partial<Record<Risk, string>> = {
@@ -48,11 +48,6 @@ export default function StatusTracking() {
   const { status, setStatus, risk, setRisk, q, setQ, from, setFrom, to, setTo, filtered } = useStatusFiltering(rows)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
-
-  const summary = useMemo(() => ({
-    total: rows.length,
-    visible: filtered.length,
-  }), [rows.length, filtered.length])
 
   // Reset pagination when filters change
   useMemo(() => {
@@ -276,7 +271,7 @@ function StatusRow({ row }: { row: ContractRow }) {
       </td>
       <td className="px-6 py-4">
         <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
-          {getStatusIcon(row.status)}
+          {getStatusIcon()}
           {formatStatusLabel(row.status)}
         </span>
       </td>
@@ -339,7 +334,7 @@ function FilterInput({ label, ...inputProps }: { label: string } & InputHTMLAttr
   )
 }
 
-function getStatusIcon(status: Status): React.ReactNode {
+function getStatusIcon(): React.ReactNode {
   return null
 }
 
@@ -361,8 +356,6 @@ function formatStatusLabel(status: Status): string {
       return 'Active'
     case 'Expired':
       return 'Expired'
-    default:
-      return status.replace(/_/g, ' ')
   }
 }
 

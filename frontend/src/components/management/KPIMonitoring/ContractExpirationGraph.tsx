@@ -17,8 +17,6 @@ const ContractExpirationGraph: React.FC<ContractExpirationGraphProps> = ({ class
     { period: 'Next 90 Days', expiringContracts: 15, expiredContracts: 1 }
   ]
 
-  // Find max value for scaling
-  const maxValue = Math.max(...contractData.flatMap(item => [item.expiringContracts, item.expiredContracts]))
   const chartHeight = 280
   const maxChartValue = 20 // Based on screenshot scale
 

@@ -129,21 +129,21 @@ export const saveContractDetails = async (contractId: string, details: ContractD
       throw updateError
     }
 
-    // Optionally save the full response untuk future reference
+    // Save the entity details (allows multiple analysis records per contract)
     const { error: insertError } = await supabase
-      .from('contract_extractions')
+      .from('contract_entities')
       .insert({
         contract_id: contractId,
-        extraction_result: details,
-        confidence_score: details.confidence_score,
-        analysis_method: details.analysis_method,
-        processing_time: details.processing_time,
-        extracted_at: new Date().toISOString(),
+        first_party: details.contract_details.first_party.name,
+        second_party: details.contract_details.second_party.name,
+        value_rp: valueRp,
+        duration_months: durationMonths,
+        analyzed_at: new Date().toISOString(),
       })
 
     if (insertError) {
       // Log but don't throw - contract update succeeded
-      console.warn('Failed to save extraction details (contract updated successfully):', insertError)
+      console.warn('Failed to save entity details (contract updated successfully):', insertError)
     }
     // Ensure the function always returns void
     return

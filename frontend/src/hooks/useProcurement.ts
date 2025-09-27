@@ -28,10 +28,50 @@ export function useContractsList() {
   const [rows, setRows] = useState<ContractRow[]>([])
   const [loading, setLoading] = useState(true)
 
+  const checkAndUpdateExpiredContracts = async (contracts: ContractRow[]) => {
+    const currentDate = new Date()
+    const expiredContracts: string[] = []
+    
+    // Find contracts that should be expired
+    contracts.forEach(contract => {
+      if (contract.end_date && (contract.status === 'Active' || contract.status === 'Approved')) {
+        const endDate = new Date(contract.end_date)
+        if (currentDate > endDate) {
+          expiredContracts.push(contract.id)
+        }
+      }
+    })
+    
+    // Update expired contracts in batch
+    if (expiredContracts.length > 0) {
+      try {
+        const { error } = await supabase
+          .from('contracts')
+          .update({ status: 'Expired' })
+          .in('id', expiredContracts)
+        
+        if (error) {
+          console.warn('Failed to update expired contracts:', error)
+        } else {
+          console.log(`Updated ${expiredContracts.length} expired contracts`)
+        }
+      } catch (error) {
+        console.warn('Error updating expired contracts:', error)
+      }
+    }
+  }
+
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('contracts').select('*').order('created_at', { ascending: false })
-    setRows((data ?? []) as ContractRow[])
+    const contracts = (data ?? []) as ContractRow[]
+    
+    // Check and update expired contracts
+    await checkAndUpdateExpiredContracts(contracts)
+    
+    // Fetch updated data after potential status changes
+    const { data: updatedData } = await supabase.from('contracts').select('*').order('created_at', { ascending: false })
+    setRows((updatedData ?? []) as ContractRow[])
     setLoading(false)
   }, [])
 
@@ -81,7 +121,7 @@ export function useUpdateContract() {
   return { update }
 }
 
-export type StatusFilter = 'All' | 'Pending Review' | 'Approved' | 'Revision Requested' | 'Draft'
+export type StatusFilter = 'All' | 'Pending Review' | 'Approved' | 'Revision Requested' | 'Draft' | 'Active' | 'Expired'
 export type RiskFilter = 'All' | Risk
 
 export function useStatusFiltering(source: ContractRow[]) {

@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { useAnalyzer, useContracts } from '@/hooks/useContracts'
-import { UploadCloud, Trash2, Save, Search, Download, ZoomIn, ZoomOut, FileText } from 'lucide-react'
+import { UploadCloud, Trash2, Save, Download, ZoomIn, ZoomOut, FileText } from 'lucide-react'
 import ButtonBlue from '@/components/ButtonBlue' // Asumsi Anda punya komponen ini
 
 // Impor komponen baru
@@ -9,7 +9,7 @@ import RiskRadarCard from '@/components/Legal/RiskRadar'
 import ContractEntitiesCard from '@/components/Legal/ContractEntitiesCard'
 
 export default function LegalAnalyzer() {
-  const { items, setRisk } = useContracts()
+  const { items } = useContracts()
   const [selected, setSelected] = useState<string | null>(items[0]?.id ?? null)
   const { entities, findings, runAnalysis, loading } = useAnalyzer(selected ?? undefined)
 
@@ -72,7 +72,12 @@ export default function LegalAnalyzer() {
       {/* Results Section */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ContractEntitiesCard entities={entities} />
-        <RiskRadarCard findings={findings} />
+        <RiskRadarCard findings={findings.map(f => ({
+          id: f.id.toString(),
+          level: f.level,
+          section: f.section || '',
+          title: f.title || undefined
+        }))} />
       </div>
 
       {/* Footer Actions */}

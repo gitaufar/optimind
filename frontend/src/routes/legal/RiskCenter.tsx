@@ -18,7 +18,7 @@ export default function LegalRiskCenter() {
     status: fltStatus !== 'All' ? fltStatus : undefined
   }), [fltRisk, fltStatus])
 
-  const { items, loading, error, refresh } = useContracts(contractFilter)
+  const { items, error, refresh } = useContracts(contractFilter)
 
   // Calculate risk distribution from filtered data
   const riskDistribution = useMemo(() => {

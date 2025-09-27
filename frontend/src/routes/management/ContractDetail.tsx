@@ -12,18 +12,9 @@ interface LegalNote {
   type: "warning" | "info";
 }
 
-interface RiskFactor {
-  type: string;
-  description: string;
-  severity: "Low" | "Medium" | "High";
-  found_keywords: string[];
-  keyword_count: number;
-}
-
 export default function ContractDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeAction, setActiveAction] = useState<string | null>(null);
   const [contractData, setContractData] = useState<ContractDetailType | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -154,7 +145,6 @@ export default function ContractDetail() {
   };
 
   const handleAction = (action: string) => {
-    setActiveAction(action);
     // Implementasi action sesuai kebutuhan
     console.log(`Action: ${action}`);
   };

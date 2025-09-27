@@ -48,7 +48,7 @@ export default function ContractStatus({ kpiData }: ContractStatusProps) {
 
           {/* Grid lines */}
           <div className="absolute inset-0 flex flex-col justify-between">
-            {yAxisLabels.map((label, index) => (
+            {yAxisLabels.map((_, index) => (
               <div key={index} className="border-t border-gray-100 w-full"></div>
             ))}
           </div>

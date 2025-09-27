@@ -78,6 +78,19 @@ export default function ProcurementDashboard() {
 
   const latestRows = useMemo(() => filteredRows.slice(0, 4), [filteredRows])
 
+  const contractStats = useMemo(() => {
+    const activeCount = rows.filter(row => row.status === 'Active').length
+    const expiredCount = rows.filter(row => row.status === 'Expired').length
+    const totalApproved = activeCount + expiredCount
+    const activeRate = totalApproved > 0 ? (activeCount / totalApproved) * 100 : 0
+    
+    return {
+      activeCount,
+      expiredCount,
+      activeRate
+    }
+  }, [rows])
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -110,15 +123,27 @@ export default function ProcurementDashboard() {
           iconClass="bg-amber-50 text-amber-600"
         />
         <MetricCard
-          title="Approved Contracts"
-          value={kpi?.approved_cnt ?? 0}
-          helper={`${formatApprovalRate(kpi?.approval_rate_pct ?? 0)} approval rate`}
+          title="Active Contracts"
+          value={contractStats.activeCount}
+          helper={`${formatPercentage(contractStats.activeRate)} active rate`}
           icon={
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6L9 17l-5-5" />
             </svg>
           }
           iconClass="bg-emerald-50 text-emerald-600"
+        />
+        <MetricCard
+          title="Expired Contracts"
+          value={contractStats.expiredCount}
+          helper="Need attention"
+          icon={
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4m0 4h.01" />
+            </svg>
+          }
+          iconClass="bg-red-50 text-red-600"
         />
       </section>
 
@@ -247,7 +272,7 @@ function Row({ row }: { row: ContractRow }) {
       <td className="px-6 py-4 text-slate-600">{formatDate(row.created_at)}</td>
       <td className="px-6 py-4">
         <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
-          {getStatusIcon(row.status)}
+          {getStatusIcon()}
           {formatStatus(row.status)}
         </span>
       </td>
@@ -269,7 +294,7 @@ function formatDelta(value: number): string {
   return `${sign}${value}% from last month`
 }
 
-function formatApprovalRate(rate: number): string {
+function formatPercentage(rate: number): string {
   return `${Math.round(rate)}%`
 }
 
@@ -291,7 +316,7 @@ function formatDate(value: string): string {
   return dateFormatter.format(date)
 }
 
-function getStatusIcon(status: Status): React.ReactNode {
+function getStatusIcon(): React.ReactNode {
   return null
 }
 
