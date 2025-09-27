@@ -8,7 +8,6 @@ const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/management/risk-heatmap', label: 'Risk Heatmap' },
   { to: '/management/lifecycle', label: 'Lifecycle Timeline' },
   { to: '/management/reports', label: 'Reports' },
-  { to: '/management/settings', label: 'Settings' },
 ]
 
 function getInitials(name: string | null | undefined) {

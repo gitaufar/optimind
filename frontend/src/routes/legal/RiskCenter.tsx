@@ -20,18 +20,25 @@ export default function LegalRiskCenter() {
 
   const { items, loading, error, refresh } = useContracts(contractFilter)
 
-  // Calculate risk distribution from filtered data
-  const riskDistribution = useMemo(() => {
-    const high = items.filter((i) => i.risk === 'High').length
-    const medium = items.filter((i) => i.risk === 'Medium').length  
-    const low = items.filter((i) => i.risk === 'Low').length
-    return { high, medium, low, total: items.length }
+  // Filter out reviewed/revision requested contracts and calculate risk distribution
+  const activeItems = useMemo(() => {
+    return items.filter((i: any) => {
+      const status = i.status?.toLowerCase() || ''
+      return status !== 'reviewed' && status !== 'revision requested'
+    })
   }, [items])
 
-  // Sort by value (highest first)
+  const riskDistribution = useMemo(() => {
+    const high = activeItems.filter((i) => i.risk === 'High').length
+    const medium = activeItems.filter((i) => i.risk === 'Medium').length  
+    const low = activeItems.filter((i) => i.risk === 'Low').length
+    return { high, medium, low, total: activeItems.length }
+  }, [activeItems])
+
+  // Sort by value (highest first) using active items only
   const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => Number(b.value_rp || 0) - Number(a.value_rp || 0))
-  }, [items])
+    return [...activeItems].sort((a, b) => Number(b.value_rp || 0) - Number(a.value_rp || 0))
+  }, [activeItems])
 
   const contractsMapped = useMemo(
     () =>
@@ -81,35 +88,18 @@ export default function LegalRiskCenter() {
       </div>
 
       {/* Bagian Kanan: Tombol Export */}
-      <div>
-        <ButtonBlue
-          text="Export Report"
-          onClick={() => exportReport()}
-          iconRight={<Download size={16} />} // 2. Tambahkan ikon di sini
-        />
-      </div>
+      {/* 
+<div>
+  <ButtonBlue
+    text="Export Report"
+    onClick={() => exportReport()}
+    iconRight={<Download size={16} />} // 2. Tambahkan ikon di sini
+  />
+</div>
+*/}
+
     </div>
 
-      <div className="flex flex-row items-center justify-between mb-4">
-      {/* Bagian Kiri: Judul dan Subjudul */}
-      <div>
-        <div className="text-3xl font-bold">
-          Risk Center
-        </div>
-        <div className='text-sm text-gray-600'>
-          Monitor and manage contract clauses with potential risks
-        </div>
-      </div>
-
-      {/* Bagian Kanan: Tombol Export */}
-      <div>
-        <ButtonBlue
-          text="Export Report"
-          onClick={() => exportReport()}
-          iconRight={<Download size={16} />} // 2. Tambahkan ikon di sini
-        />
-      </div>
-    </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <CardDashboard
