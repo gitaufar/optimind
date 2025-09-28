@@ -1,4 +1,4 @@
-# iFEST - Intelligent Financial & Executive Support Tools
+# iFEST - Optimind
 
 Smart contract management system with AI-powered risk analysis and automated procurement workflows.
 
