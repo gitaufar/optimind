@@ -24,7 +24,6 @@ models/indo_bert/
 *.h5
 
 # Config & Secrets
-backend/config/
 backend/data/
 .env
 

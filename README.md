@@ -68,23 +68,41 @@ pip install -r requirements.txt
 ```
 
 #### 2.4 Environment Configuration
-Create a `.env` file in the `backend` directory:
+Copy the example environment file and configure your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file with your actual credentials:
 
 ```env
-# Supabase Configuration
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+# AI/ML API Keys (REQUIRED)
+GROQ_API_KEY=your_groq_api_key_here
+HUGGINGFACE_API_TOKEN=your_huggingface_token_here
+OPENAI_API_KEY=your_openai_api_key_here
 
-# Groq API Configuration
-GROQ_API_KEY=your_groq_api_key
+# Security Settings (IMPORTANT: Change in production!)
+SECRET_KEY=your_very_secure_random_secret_key_here
+
+# Database Settings
+DATABASE_URL=sqlite:///./contracts.db
 
 # Application Settings
 APP_ENV=development
 DEBUG=True
-UPLOAD_FOLDER=./data/uploads
-OUTPUT_FOLDER=./data/outputs
+HOST=0.0.0.0
+PORT=8000
+
+# File Upload Settings
+UPLOAD_DIR=./data/uploads
+MAX_FILE_SIZE=10485760
+
+# CORS Settings (comma-separated)
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
+
+**⚠️ Security Note**: Never commit the `.env` file to version control. Always use `.env.example` as a template.
 
 #### 2.5 Database Setup
 1. Create a new project on [Supabase](https://supabase.com)
