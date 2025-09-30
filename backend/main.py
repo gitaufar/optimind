@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from routes import analyze, risk
+from config.settings import settings
 import sys
 import os
 
@@ -12,7 +13,7 @@ app = FastAPI(title="ILCS Contract AI API", version="1.0.0")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=settings.cors_origins,  # Use settings for CORS origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

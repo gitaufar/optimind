@@ -27,11 +27,12 @@ class Settings(BaseSettings):
         description="Allowed CORS origins (comma-separated)"
     )
     
-    @validator('ALLOWED_ORIGINS', pre=True)
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',') if origin.strip()]
-        return v
+    @property
+    def cors_origins(self) -> List[str]:
+        """Parse CORS origins from comma-separated string"""
+        if isinstance(self.ALLOWED_ORIGINS, str):
+            return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(',') if origin.strip()]
+        return self.ALLOWED_ORIGINS if isinstance(self.ALLOWED_ORIGINS, list) else []
     
     # Database settings (for future use)
     DATABASE_URL: str = Field(
