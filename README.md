@@ -1,4 +1,4 @@
-# iFEST - Intelligent Financial & Executive Support Tools
+# iFEST Hackathon - Optimind
 
 Smart contract management system with AI-powered risk analysis and automated procurement workflows.
 
@@ -245,16 +245,16 @@ After running the seed script, you can use these test accounts:
 
 ```
 Legal User:
-- Email: legal@company.com
-- Password: password123
+- Email: admin@gmail.com
+- Password: admin123
 
 Management User:
-- Email: manager@company.com
-- Password: password123
+- Email: andikger@gmail.com
+- Password: 12345678
 
 Procurement User:
-- Email: procurement@company.com
-- Password: password123
+- Email: adnika@gmail..com
+- Password: 12345678
 ```
 
 ## 🧪 Testing
@@ -327,9 +327,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For support, please contact:
-- Email: support@ifest.com
+- Email: zhafiraufar123@gmail.com
 - GitHub Issues: [Create an issue](https://github.com/gitaufar/optimind/issues)
 
 ---
 
-Made with ❤️ by the iFEST Team
+Made with ❤️ by the ZAS Team
