@@ -35,7 +35,8 @@ export const extractContractDetails = async (file: File): Promise<ContractDetail
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await fetch('http://127.0.0.1:8000/contract/details', {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+    const response = await fetch(`${API_BASE_URL}/contract/details`, {
       method: 'POST',
       body: formData,
     })
